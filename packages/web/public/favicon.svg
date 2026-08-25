@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32">
+  <title>Open Aviation Telemetry</title>
+  <rect width="24" height="24" rx="4.5" fill="#191812"/>
+  <circle cx="12" cy="12" r="9.9" fill="none" stroke="#ff8c00" stroke-width="0.9" opacity="0.42"/>
+  <path d="M16.17 7.83 L11.05 11.05 L12 12 Z M16.17 16.17 L12.95 11.05 L12 12 Z M7.83 16.17 L12.95 12.95 L12 12 Z M7.83 7.83 L11.05 12.95 L12 12 Z M12.00 1.60 L10.15 12.00 L12 12 Z M22.40 12.00 L12.00 10.15 L12 12 Z M12.00 22.40 L13.85 12.00 L12 12 Z M1.60 12.00 L12.00 13.85 L12 12 Z" fill="#ff8c00" opacity="0.45"/>
+  <path d="M16.17 7.83 L12.95 12.95 L12 12 Z M16.17 16.17 L11.05 12.95 L12 12 Z M7.83 16.17 L11.05 11.05 L12 12 Z M7.83 7.83 L12.95 11.05 L12 12 Z M12.00 1.60 L13.85 12.00 L12 12 Z M22.40 12.00 L12.00 13.85 L12 12 Z M12.00 22.40 L10.15 12.00 L12 12 Z M1.60 12.00 L12.00 10.15 L12 12 Z" fill="#ff8c00"/>
+</svg>

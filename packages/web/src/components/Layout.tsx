@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { useDataSource } from '../data-source.js';
+import { CompassRose } from './CompassRose.js';
 
 const NAV = [
   { to: '/', label: 'Dashboard', end: true },
@@ -11,18 +12,6 @@ const NAV = [
   { to: '/training', label: 'Training' },
   { to: '/demo', label: 'Demo console' },
 ];
-
-function Mark(): React.JSX.Element {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M12 2 L14.4 9.2 L22 11.6 L14.4 14 L12 21.2 L9.6 14 L2 11.6 L9.6 9.2 Z"
-        fill="currentColor"
-        opacity="0.9"
-      />
-    </svg>
-  );
-}
 
 /**
  * The data-source banner.
@@ -74,7 +63,7 @@ export function Layout({ children }: { children: ReactNode }): React.JSX.Element
     <div className="app">
       <header className="masthead">
         <span className="masthead__mark">
-          <Mark />
+          <CompassRose />
           Open Aviation Telemetry
         </span>
         <span className="masthead__sub">

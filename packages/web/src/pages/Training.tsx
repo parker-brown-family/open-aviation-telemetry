@@ -3,9 +3,12 @@ import {
   AREA_LABEL,
   TRAINING_ITEMS,
   TRAINING_STORAGE_KEY,
+  stepLabel,
   type TrainingArea,
+  type TrainingItem,
 } from '../training-data.js';
 import { Panel } from '../components/primitives.js';
+import { StepMark } from '../components/StepMark.js';
 
 /**
  * The training checklist.
@@ -70,6 +73,74 @@ function Departure(): React.JSX.Element {
   );
 }
 
+/**
+ * The build steps under one course.
+ *
+ * Collapsed by default. Nine courses with four steps each is forty-five rows on
+ * open, which buries the list this page is actually for; the summary line
+ * carries the progress so nothing is hidden that you need in order to decide
+ * whether to open it.
+ */
+function Steps({
+  item,
+  done,
+  onToggle,
+}: {
+  item: TrainingItem;
+  done: Set<string>;
+  onToggle: (id: string) => void;
+}): React.JSX.Element | null {
+  const [open, setOpen] = useState(false);
+  if (item.steps.length === 0) return null;
+
+  const finished = item.steps.filter((step) => done.has(step.id)).length;
+  const panelId = `steps-${item.id}`;
+
+  return (
+    <div className="tr-steps">
+      <button
+        type="button"
+        className="tr-steps__disclosure"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((was) => !was)}
+      >
+        <svg className="tr-steps__chevron" viewBox="0 0 12 12" width="10" height="10" aria-hidden>
+          <path d="M4 2 L8 6 L4 10" fill="none" stroke="currentColor" strokeWidth="1.6" />
+        </svg>
+        <span>Build steps</span>
+        <span className="tr-steps__count">
+          {finished}/{item.steps.length}
+        </span>
+      </button>
+
+      {open ? (
+        <ol className="tr-steps__list" id={panelId}>
+          {item.steps.map((step, index) => {
+            const isDone = done.has(step.id);
+            return (
+              <li key={step.id} className={`tr-step${isDone ? ' is-done' : ''}`}>
+                <button
+                  type="button"
+                  className="tr-step__toggle"
+                  aria-pressed={isDone}
+                  onClick={() => onToggle(step.id)}
+                >
+                  <StepMark done={isDone} />
+                  <span className="tr-step__ord" aria-hidden="true">
+                    {stepLabel(index)}
+                  </span>
+                  <span className="tr-step__label">{step.label}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      ) : null}
+    </div>
+  );
+}
+
 export function Training(): React.JSX.Element {
   const [launched, setLaunched] = useState<Set<string>>(read);
 
@@ -77,6 +148,8 @@ export function Training(): React.JSX.Element {
     write(launched);
   }, [launched]);
 
+  // One set for courses and steps alike. Step ids are prefixed with their
+  // course id, so they cannot collide, and there is only one thing to persist.
   const toggle = useCallback((id: string) => {
     setLaunched((previous) => {
       const next = new Set(previous);
@@ -89,6 +162,9 @@ export function Training(): React.JSX.Element {
   const done = TRAINING_ITEMS.filter((item) => launched.has(item.id)).length;
   const gaps = TRAINING_ITEMS.filter((item) => item.gap);
 
+  const allSteps = TRAINING_ITEMS.flatMap((item) => item.steps);
+  const stepsDone = allSteps.filter((step) => launched.has(step.id)).length;
+
   return (
     <div className="stack">
       <div className="page__head">
@@ -98,8 +174,14 @@ export function Training(): React.JSX.Element {
           between having stood a service up once and being able to run it when it misbehaves at 2am.
           Tap a course to mark it launched; the list keeps its place between visits.
         </p>
+        <p>
+          Under each course is what to build with it: a change to this repository that cannot be
+          made without the material, and that either works or does not when it is done. A finished
+          course proves you watched it — these are the part that proves you can use it.
+        </p>
         <p className="rs-meta">
-          {TRAINING_ITEMS.length} courses · {AREA_ORDER.length} skill areas · {done} launched
+          {TRAINING_ITEMS.length} courses · {AREA_ORDER.length} skill areas · {allSteps.length}{' '}
+          build steps · {done} launched · {stepsDone} built
         </p>
       </div>
 
@@ -150,6 +232,7 @@ export function Training(): React.JSX.Element {
                   <a href={item.url} target="_blank" rel="noreferrer noopener" className="tr-open">
                     Open the course ↗
                   </a>
+                  <Steps item={item} done={launched} onToggle={toggle} />
                 </div>
               </li>
             );

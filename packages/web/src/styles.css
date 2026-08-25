@@ -2296,6 +2296,173 @@ button.small {
   text-transform: uppercase;
 }
 
+/* ── build steps ────────────────────────────────────────────────────────── */
+
+.tr-steps {
+  margin-top: 10px;
+}
+
+/*
+ * The disclosure. Its own control rather than part of the course row, because
+ * that row already means "mark this launched" — one button doing two things is
+ * how you end up checking off a course you meant to expand.
+ */
+.tr-steps__disclosure {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px 5px 8px;
+  border: 1px solid rgb(var(--olive) / 0.4);
+  border-radius: var(--radius);
+  background: transparent;
+  color: rgb(var(--olive-pale));
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.tr-steps__disclosure:hover {
+  background: rgb(var(--olive) / 0.1);
+  border-color: rgb(var(--olive-bright) / 0.7);
+}
+
+.tr-steps__disclosure:focus-visible {
+  outline: 2px solid rgb(var(--orange) / 0.8);
+  outline-offset: 1px;
+}
+
+.tr-steps__chevron {
+  transition: transform 160ms ease;
+}
+
+.tr-steps__disclosure[aria-expanded='true'] .tr-steps__chevron {
+  transform: rotate(90deg);
+}
+
+.tr-steps__count {
+  color: rgb(var(--fg-faint));
+  font-variant-numeric: tabular-nums;
+}
+
+.tr-steps__list {
+  list-style: none;
+  margin: 9px 0 2px;
+  padding: 0;
+  /* Hangs off the course above it, so the nesting is legible without a rule. */
+  border-left: 1px solid rgb(var(--olive) / 0.28);
+}
+
+/*
+ * The whole row is the target, not just the box. A 16px checkbox is a miss
+ * waiting to happen on a phone; the button spans the row and carries the
+ * padding, which puts the hit area well past the 44px guideline vertically and
+ * the full column width horizontally.
+ */
+.tr-step__toggle {
+  display: grid;
+  grid-template-columns: 16px 14px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  color: rgb(var(--fg-muted));
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.tr-step__toggle:hover {
+  background: rgb(var(--olive) / 0.08);
+  color: rgb(var(--fg));
+  box-shadow: none;
+}
+
+.tr-step__toggle:focus-visible {
+  outline: 2px solid rgb(var(--orange) / 0.8);
+  outline-offset: -2px;
+}
+
+.tr-step__ord {
+  color: rgb(var(--fg-faint));
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  padding-top: 1px;
+}
+
+.tr-step__label {
+  min-width: 0;
+  /* The strike sits across the words, matching the course row above. */
+  text-decoration-line: none;
+}
+
+.tr-step.is-done .tr-step__label {
+  color: rgb(var(--fg-faint));
+  text-decoration-line: line-through;
+  text-decoration-color: rgb(var(--olive-bright));
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0;
+}
+
+.tr-step.is-done .tr-step__ord {
+  color: rgb(var(--olive-bright) / 0.7);
+}
+
+/* ── the mark ───────────────────────────────────────────────────────────── */
+
+.tr-mark {
+  display: inline-flex;
+  padding-top: 1px;
+}
+
+.tr-mark__box {
+  stroke: rgb(var(--olive) / 0.65);
+  fill: transparent;
+  transition:
+    stroke 160ms ease,
+    fill 160ms ease;
+}
+
+.tr-step__toggle:hover .tr-mark__box {
+  stroke: rgb(var(--olive-bright));
+}
+
+/*
+ * The cross is always in the DOM and revealed by opacity rather than mounted on
+ * check, so it can be drawn on instead of appearing. pathLength normalises both
+ * strokes to the same dash budget regardless of their real lengths.
+ */
+.tr-mark__cross {
+  stroke: rgb(var(--olive-bright));
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  opacity: 0;
+}
+
+.tr-mark.is-done .tr-mark__box {
+  stroke: rgb(var(--olive-bright) / 0.8);
+  fill: rgb(var(--olive-bright) / 0.08);
+}
+
+.tr-mark.is-done .tr-mark__cross {
+  opacity: 1;
+  stroke-dashoffset: 0;
+  transition:
+    stroke-dashoffset 180ms ease-out,
+    opacity 60ms linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tr-mark__cross,
+  .tr-steps__chevron {
+    transition: none;
+  }
+}
+
 @media (max-width: 700px) {
   .tr-item__why {
     padding-left: 14px;
