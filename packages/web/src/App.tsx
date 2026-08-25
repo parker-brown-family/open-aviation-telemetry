@@ -6,6 +6,7 @@ import { Alerts } from './pages/Alerts.js';
 import { Architecture } from './pages/Architecture.js';
 import { Research } from './pages/Research.js';
 import { Training } from './pages/Training.js';
+import { Credentials } from './pages/Credentials.js';
 import { DemoConsole } from './pages/DemoConsole.js';
 
 /**
@@ -24,6 +25,7 @@ export function App(): React.JSX.Element {
         <Route path="/architecture" element={<Architecture />} />
         <Route path="/research" element={<Research />} />
         <Route path="/training" element={<Training />} />
+        <Route path="/credentials" element={<Credentials />} />
         <Route path="/demo" element={<DemoConsole />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

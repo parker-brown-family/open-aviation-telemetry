@@ -32,7 +32,7 @@ OUT_DIR="${2:-dist-static}"
 API_BASE_URL="${VITE_API_BASE_URL:-}"
 
 # Client-side routes that must be reachable as deep links.
-ROUTES=(fleet alerts architecture research training demo)
+ROUTES=(fleet alerts architecture research training credentials demo)
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"

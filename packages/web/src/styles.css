@@ -2524,3 +2524,167 @@ button.small {
     transition: none;
   }
 }
+
+/* ---------------------------------------------------------------- credentials */
+
+/*
+ * The credentials page.
+ *
+ * Same disclosure grammar as the research page, deliberately: a reader who has
+ * learned that a row here opens should not have to learn it twice. The one
+ * addition is the evidence block at the foot of an open card, which is the
+ * point of the page — a claim with nothing under it is worth less than no claim.
+ */
+
+.cr-cards {
+  padding: 0;
+}
+
+.cr-card + .cr-card {
+  border-top: 1px solid rgb(var(--olive) / 0.2);
+}
+
+.cr-card__head {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  border-left: 2px solid transparent;
+  border-radius: 0;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  color: rgb(var(--fg));
+  background: transparent;
+}
+
+.cr-card__head:hover:not(:disabled) {
+  background: rgb(var(--olive) / 0.08);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.cr-card__head:focus-visible {
+  outline: 2px solid rgb(var(--orange) / 0.8);
+  outline-offset: -2px;
+}
+
+.cr-card.is-open .cr-card__head {
+  background: rgb(var(--olive) / 0.07);
+  border-left-color: rgb(var(--olive) / 0.6);
+}
+
+.cr-card__chevron {
+  display: inline-flex;
+  margin-top: 4px;
+  color: rgb(var(--olive-pale));
+  transition: transform 140ms ease;
+}
+
+.cr-card.is-open .cr-card__chevron {
+  transform: rotate(90deg);
+}
+
+.cr-card__title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cr-card__name {
+  font-size: 13.5px;
+  letter-spacing: 0.04em;
+}
+
+.cr-card__issuer {
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(var(--olive-pale));
+}
+
+.cr-card__summary {
+  margin-top: 2px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: rgb(var(--fg-muted));
+}
+
+.cr-card.is-open .cr-card__summary {
+  display: none;
+}
+
+.cr-card__when {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(var(--fg-faint));
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.cr-card__body {
+  padding: 2px 16px 16px 40px;
+}
+
+.cr-card__body p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.72;
+  max-width: 88ch;
+  color: rgb(var(--fg));
+}
+
+@media (max-width: 700px) {
+  .cr-card__body {
+    padding-left: 16px;
+  }
+}
+
+/* ── evidence ───────────────────────────────────────────────────────────── */
+
+.cr-evidence {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed rgb(var(--olive) / 0.3);
+}
+
+.cr-evidence__label {
+  display: block;
+  font-size: 9.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgb(var(--fg-faint));
+  margin-bottom: 5px;
+}
+
+.cr-evidence ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+.cr-evidence a {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* An entry with nothing to link says so, in the same dashed idiom the research
+   page uses for a value it could not source. */
+.cr-evidence__none {
+  margin-top: 12px !important;
+  padding: 8px 11px;
+  border: 1px dashed rgb(var(--fg-faint) / 0.45);
+  border-radius: var(--radius);
+  font-size: 11.5px !important;
+  color: rgb(var(--fg-faint)) !important;
+  max-width: 78ch;
+}
