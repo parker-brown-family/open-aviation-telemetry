@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   RESEARCH_BUBBLES,
@@ -93,16 +93,24 @@ function Field({ field }: { field: ResearchField }): React.JSX.Element {
 
 function Case({
   subject,
+  next,
   open,
   onToggle,
+  onAdvance,
 }: {
   subject: ResearchSubject;
+  /** The lesson after this one in the visible order, or null at the end. */
+  next: ResearchSubject | null;
   open: boolean;
   onToggle: (id: string) => void;
+  onAdvance: (currentId: string, nextId: string) => void;
 }): React.JSX.Element {
   const bodyId = `case-${subject.id}`;
   return (
-    <article className={`rs-case rs-case--${subject.severity}${open ? ' is-open' : ''}`}>
+    <article
+      id={`lesson-${subject.id}`}
+      className={`rs-case rs-case--${subject.severity}${open ? ' is-open' : ''}`}
+    >
       <button
         type="button"
         className="rs-case__head"
@@ -137,29 +145,50 @@ function Case({
           </dl>
 
           {/*
-            A second way to close, at the end of the reading rather than at the
-            top of it. An open lesson is taller than the window, so the header
-            that opened it has scrolled away by the time you have finished — and
-            hunting back up the page for it is the wrong thing to ask of someone
-            working down the list. No aria-expanded here: the header is the
-            disclosure control, and two controls both announcing the state would
-            be read out twice.
+            The control for the end of the reading rather than the top of it. An
+            open lesson is taller than the window, so the header that opened it
+            has scrolled away by the time you have finished, and hunting back up
+            the page is the wrong thing to ask of someone working down the list.
+
+            It advances rather than merely closing, because reading straight
+            through is what this page is for: close this one, open the next,
+            leave the next one's heading at the top of the window. The last
+            lesson has nowhere to advance to, so there it just closes.
+
+            No aria-expanded here — the header is the disclosure control, and two
+            controls both announcing the state would be read out twice.
           */}
           <div className="rs-case__foot">
-            <button
-              type="button"
-              className="rs-collapse"
-              aria-controls={bodyId}
-              aria-label={`Collapse ${subject.label}`}
-              onClick={() => onToggle(subject.id)}
-            >
-              <span className="rs-collapse__chevron" aria-hidden="true">
-                <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-                  <path d="M0.5 6.5 L4.5 0.5 L8.5 6.5 Z" fill="currentColor" />
-                </svg>
-              </span>
-              Collapse
-            </button>
+            {next ? (
+              <button
+                type="button"
+                className="rs-collapse"
+                aria-label={`Close this lesson and open the next one: ${next.label}`}
+                onClick={() => onAdvance(subject.id, next.id)}
+              >
+                Expand next
+                <span className="rs-collapse__chevron" aria-hidden="true">
+                  <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+                    <path d="M0.5 0.5 L8.5 0.5 L4.5 6.5 Z" fill="currentColor" />
+                  </svg>
+                </span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="rs-collapse"
+                aria-controls={bodyId}
+                aria-label={`Collapse ${subject.label}`}
+                onClick={() => onToggle(subject.id)}
+              >
+                <span className="rs-collapse__chevron" aria-hidden="true">
+                  <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+                    <path d="M0.5 6.5 L4.5 0.5 L8.5 6.5 Z" fill="currentColor" />
+                  </svg>
+                </span>
+                Collapse
+              </button>
+            )}
           </div>
         </div>
       ) : null}
@@ -196,6 +225,48 @@ export function Research(): React.JSX.Element {
     [openIds, setParams],
   );
 
+  /**
+   * Set when a lesson is advanced to, cleared once it has been scrolled to.
+   *
+   * The scroll cannot happen in the click handler: the lesson being opened is
+   * not in the DOM yet, and the one being closed is about to collapse out from
+   * under the scroll position. It has to wait for the commit, which is what this
+   * state and the effect below are for.
+   */
+  const [scrollTo, setScrollTo] = useState<string | null>(null);
+
+  const advance = useCallback(
+    (currentId: string, nextId: string) => {
+      setOpenIds((previous) => {
+        const next = new Set(previous);
+        next.delete(currentId);
+        next.add(nextId);
+        return next;
+      });
+      setParams(
+        (previous) => {
+          const next = new URLSearchParams(previous);
+          next.set('case', nextId);
+          return next;
+        },
+        { replace: true },
+      );
+      setScrollTo(nextId);
+    },
+    [setParams],
+  );
+
+  useEffect(() => {
+    if (!scrollTo) return;
+    const element = document.getElementById(`lesson-${scrollTo}`);
+    // Guarded because jsdom does not implement scrollIntoView, and a test that
+    // exercises this path should assert the state change, not crash on layout.
+    if (element && typeof element.scrollIntoView === 'function') {
+      element.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
+    setScrollTo(null);
+  }, [scrollTo]);
+
   const needle = query.trim().toLowerCase();
 
   const groups = useMemo(() => {
@@ -208,6 +279,18 @@ export function Research(): React.JSX.Element {
 
   const matches = groups.reduce((n, group) => n + group.subjects.length, 0);
   const allIds = RESEARCH_GROUPS.flatMap((g) => g.subjects.map((s) => s.id));
+
+  /**
+   * What "next" means for each lesson, in reading order.
+   *
+   * Built from the *visible* list rather than the full one, so under a filter
+   * the button advances to the next lesson the reader can actually see instead
+   * of opening one that the filter has hidden.
+   */
+  const nextOf = useMemo(() => {
+    const visible = groups.flatMap((group) => group.subjects);
+    return new Map(visible.map((subject, index) => [subject.id, visible[index + 1] ?? null]));
+  }, [groups]);
 
   /**
    * A filter matches on the body text as well as the title, so a narrowed list
@@ -310,8 +393,10 @@ export function Research(): React.JSX.Element {
             <Case
               key={subject.id}
               subject={subject}
+              next={nextOf.get(subject.id) ?? null}
               open={openIds.has(subject.id)}
               onToggle={toggle}
+              onAdvance={advance}
             />
           ))}
         </Panel>

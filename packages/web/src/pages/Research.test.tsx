@@ -50,25 +50,72 @@ describe('Research page', () => {
     expect(screen.queryByText(subject.fields[0]!.text)).toBeNull();
   });
 
-  it('closes a lesson from the button at the foot of it', async () => {
+  it('advances to the next lesson from the button at the foot of one', async () => {
     // An open lesson is taller than the window, so by the time you have read it
-    // the header that opened it is off screen. Closing has to be reachable from
-    // where the reading ends, not only from where it started.
+    // the header that opened it is off screen. The control at the end of the
+    // reading carries you onward: this one closes, the next one opens.
     const user = userEvent.setup();
     renderWithProviders(<Research />);
 
     const subject = RESEARCH_SUBJECTS[0]!;
+    const next = RESEARCH_SUBJECTS[1]!;
     const head = screen.getByRole('button', { name: new RegExp(`^${escape(subject.label)}`) });
     await user.click(head);
 
-    const foot = screen.getByRole('button', { name: `Collapse ${subject.label}` });
+    const foot = screen.getByRole('button', {
+      name: `Close this lesson and open the next one: ${next.label}`,
+    });
     // Not a second disclosure control: only the header announces the state, or
     // a screen reader hears it twice.
     expect(foot).not.toHaveAttribute('aria-expanded');
 
     await user.click(foot);
+
     expect(head).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByText(subject.fields[0]!.text)).toBeNull();
+    expect(
+      screen.getByRole('button', { name: new RegExp(`^${escape(next.label)}`) }),
+    ).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText(next.fields[0]!.text)).toBeVisible();
+  });
+
+  it('offers a plain collapse on the last lesson, which has nowhere to advance to', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Research />);
+
+    const last = RESEARCH_SUBJECTS[RESEARCH_SUBJECTS.length - 1]!;
+    const head = screen.getByRole('button', { name: new RegExp(`^${escape(last.label)}`) });
+    await user.click(head);
+
+    expect(screen.queryByRole('button', { name: /open the next one/ })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: `Collapse ${last.label}` }));
+    expect(head).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('advances within the filtered list, not into a lesson the filter hid', async () => {
+    // Advancing into a hidden lesson would open something the reader cannot see
+    // and leave the button pointing at a row that is not on the page.
+    const user = userEvent.setup();
+    renderWithProviders(<Research />);
+
+    await user.type(screen.getByLabelText('Filter lessons'), 'altitude');
+    const visible = screen
+      .getAllByRole('button', { expanded: true })
+      .map((head) => head.textContent ?? '');
+    expect(visible.length).toBeGreaterThan(1);
+
+    const advancers = screen.getAllByRole('button', { name: /open the next one/ });
+    // Every visible lesson but the last one offers an advance, and each target
+    // is one of the lessons the filter kept.
+    expect(advancers).toHaveLength(visible.length - 1);
+    for (const button of advancers) {
+      const target = (button.getAttribute('aria-label') ?? '').replace(
+        'Close this lesson and open the next one: ',
+        '',
+      );
+      expect(visible.some((text) => text.includes(target))).toBe(true);
+    }
   });
 
   it('opens the case named in the query string', () => {
