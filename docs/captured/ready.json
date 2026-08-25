@@ -1,0 +1,17 @@
+{
+  "ready": true,
+  "dependencies": {
+    "database": {
+      "ready": true,
+      "error": null
+    },
+    "kafka": {
+      "ready": true,
+      "error": null
+    },
+    "rabbitmq": {
+      "ready": true,
+      "error": null
+    }
+  }
+}

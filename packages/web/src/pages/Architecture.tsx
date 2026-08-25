@@ -1,21 +1,75 @@
 import { useCallback, useState } from 'react';
 import { usePoll } from '../api.js';
 import { useDataSource } from '../data-source.js';
-import { ARCH_EDGES, ARCH_NODES, NODE_BY_ID, TOUR } from '../architecture.js';
+import { ARCH_EDGES, ARCH_NODES, NODE_BY_ID, TOUR, diagramService } from '../architecture.js';
+import {
+  NODE_H,
+  NODE_PAD,
+  NODE_W,
+  SERVICE_ADVANCE_EM,
+  SERVICE_FONT,
+  fitLabel,
+  fitService,
+} from '../components/diagramText.js';
+import { NodeDetail } from '../components/NodeDetail.js';
 import { Panel, Pill } from '../components/primitives.js';
 
-/**
- * Node box size, in the diagram's own 100 × 74 coordinate space.
- *
- * Wide enough that the longest label ("Stream processor") fits inside the box
- * at the label font size. SVG does not wrap text, so a label that does not fit
- * simply overflows across whatever is next to it.
- */
-const NODE_W = 15;
-const NODE_H = 7;
+/** Width of an edge label, in diagram units. Same monospace metric as the boxes. */
+const edgeLabelWidth = (text: string): number => text.length * SERVICE_FONT * SERVICE_ADVANCE_EM;
 
-/** Roughly how many monospace characters fit on the service line. */
-const SERVICE_CHARS = 23;
+/**
+ * Edge-label placement.
+ *
+ * A label at the midpoint of a curve frequently lands on top of a node box —
+ * "project + read" was being cut in half by the Job queue box. The midpoint is
+ * only a starting point: if it collides, the label slides along the curve
+ * toward whichever end has room.
+ *
+ * Each label also gets a chip behind it, because these run across connector
+ * lines even when they clear the boxes.
+ */
+function labelPoint(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+  control: { x: number; y: number },
+  width: number,
+): { x: number; y: number } {
+  // Quadratic Bézier at t.
+  const at = (t: number): { x: number; y: number } => ({
+    x: (1 - t) ** 2 * a.x + 2 * (1 - t) * t * control.x + t ** 2 * b.x,
+    y: (1 - t) ** 2 * a.y + 2 * (1 - t) * t * control.y + t ** 2 * b.y,
+  });
+
+  const clear = (p: { x: number; y: number }): boolean => {
+    const box = { x: p.x - width / 2, y: p.y - 1.6, w: width, h: 2.2 };
+    return !ARCH_NODES.some(
+      (n) =>
+        box.x < n.x + NODE_W && box.x + box.w > n.x && box.y < n.y + NODE_H && box.y + box.h > n.y,
+    );
+  };
+
+  // Midpoint first, then progressively further toward each end.
+  for (const t of [0.5, 0.38, 0.62, 0.28, 0.72]) {
+    const p = at(t);
+    if (clear(p)) return p;
+  }
+
+  /*
+   * Nothing along the curve is clear. That happens when two boxes are adjacent:
+   * Web client and Ingress sit one unit apart, so every point on the connector
+   * between them is inside one box or the other, and "HTTP" was drawn
+   * underneath the Ingress box.
+   *
+   * Step the label off the line instead — above first, because that is where
+   * the eye goes and there is usually room between rows.
+   */
+  const mid = at(0.5);
+  for (const dy of [-2.6, 3.2, -4.4, 4.8]) {
+    const p = { x: mid.x, y: mid.y + dy };
+    if (clear(p)) return p;
+  }
+  return mid;
+}
 
 function ArchDiagram({
   selectedId,
@@ -49,6 +103,9 @@ function ArchDiagram({
             // overlap into an unreadable bundle.
             const mx = (a.x + b.x) / 2;
             const my = (a.y + b.y) / 2 - Math.abs(b.y - a.y) * 0.12;
+            const control = { x: mx, y: my };
+            const chipW = edgeLabelWidth(edge.label) + 1;
+            const at = labelPoint(a, b, control, chipW);
             return (
               <g
                 key={`${edge.from}-${edge.to}`}
@@ -60,7 +117,16 @@ function ArchDiagram({
                   markerEnd="url(#arrow)"
                   style={{ color: 'currentColor' }}
                 />
-                <text className="arch__edge-label" x={mx} y={my - 0.6} textAnchor="middle">
+                {/* Chip behind the text so it reads over the connector lines. */}
+                <rect
+                  className="arch__edge-chip"
+                  x={at.x - chipW / 2}
+                  y={at.y - 1.5}
+                  width={chipW}
+                  height={2}
+                  rx={0.3}
+                />
+                <text className="arch__edge-label" x={at.x} y={at.y} textAnchor="middle">
                   {edge.label}
                 </text>
               </g>
@@ -94,13 +160,11 @@ function ArchDiagram({
                 }}
               >
                 <rect x={node.x} y={node.y} width={NODE_W} height={NODE_H} />
-                <text className="arch__label" x={node.x + 1} y={node.y + 3}>
-                  {node.label}
+                <text className="arch__label" x={node.x + NODE_PAD} y={node.y + 3}>
+                  {fitLabel(node.label)}
                 </text>
-                <text className="arch__service" x={node.x + 1} y={node.y + 5.2}>
-                  {node.awsService.length > SERVICE_CHARS
-                    ? `${node.awsService.slice(0, SERVICE_CHARS - 1)}…`
-                    : node.awsService}
+                <text className="arch__service" x={node.x + NODE_PAD} y={node.y + 5.1}>
+                  {fitService(diagramService(node))}
                 </text>
               </g>
             );
@@ -108,16 +172,22 @@ function ArchDiagram({
         </g>
       </svg>
 
+      {/*
+        Swatch colours are read from the theme tokens the edges actually use.
+        These previously referenced --cyan and --violet, which the tactical
+        palette does not define — so the swatches rendered with no colour at all
+        while the edges beside them were olive and orange.
+      */}
       <div className="legend">
         <span>
-          <i style={{ borderColor: 'var(--cyan)' }} /> synchronous request
+          <i style={{ borderColor: 'rgb(var(--olive-bright))' }} /> synchronous request
         </span>
         <span>
-          <i style={{ borderColor: 'var(--violet)', borderTopStyle: 'dashed' }} /> asynchronous
+          <i style={{ borderColor: 'rgb(var(--orange))', borderTopStyle: 'dashed' }} /> asynchronous
           message
         </span>
         <span>
-          <i style={{ borderColor: 'var(--text-faint)' }} /> database access
+          <i style={{ borderColor: 'rgb(var(--fg-faint))' }} /> database access
         </span>
       </div>
     </div>
@@ -217,33 +287,8 @@ export function Architecture(): React.JSX.Element {
       />
 
       <div className="grid grid--split">
-        <Panel title={`${selected.label} — ${selected.awsService}`} bodyClassName="panel__body">
-          <div className="detail">
-            <dl>
-              <dt>What it is</dt>
-              <dd>{selected.what}</dd>
-              <dt>Why it is here</dt>
-              <dd>{selected.why}</dd>
-              <dt>What was considered instead</dt>
-              <dd>{selected.alternative}</dd>
-              <dt>How it fails</dt>
-              <dd>{selected.failure}</dd>
-              <dt>How it scales</dt>
-              <dd>{selected.scaling}</dd>
-              <dt>Security</dt>
-              <dd>{selected.security}</dd>
-              <dt>Running locally</dt>
-              <dd>{selected.localEquivalent}</dd>
-              <dt>In the repository</dt>
-              <dd>
-                {selected.source.map((path) => (
-                  <div key={path} className="mono faint">
-                    {path}
-                  </div>
-                ))}
-              </dd>
-            </dl>
-          </div>
+        <Panel title={`${selected.label} — ${selected.awsService}`} bodyClassName="">
+          <NodeDetail node={selected} />
         </Panel>
 
         <Panel

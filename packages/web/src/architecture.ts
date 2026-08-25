@@ -447,3 +447,34 @@ export const TOUR: TourStep[] = [
 ];
 
 export const NODE_BY_ID = new Map(ARCH_NODES.map((n) => [n.id, n]));
+
+/**
+ * Short service names, used in the diagram only.
+ *
+ * The full name belongs in the detail panel, where there is room to read it:
+ * "Amazon RDS for PostgreSQL" is more useful than "Amazon RDS". In a 15-unit
+ * box it is simply too wide, and SVG text neither wraps nor clips — it draws
+ * across the next box.
+ *
+ * Authored short forms rather than an ellipsis: "Amazon RDS" reads as a
+ * deliberate abbreviation, "Amazon RDS for Postgre…" reads as a bug. Where a
+ * node has no entry the full name is used, and the fit test will fail if that
+ * name is too long — so a new node cannot silently overflow.
+ */
+export const DIAGRAM_SERVICE: Record<string, string> = {
+  client: 'Static host',
+  alb: 'ALB ingress',
+  api: 'Amazon EKS',
+  kafka: 'Amazon MSK',
+  consumer: 'Amazon EKS',
+  rabbit: 'Amazon MQ',
+  worker: 'Amazon EKS',
+  rds: 'Amazon RDS',
+  observability: 'CloudWatch',
+  eks: 'Amazon EKS',
+  terraform: 'Infra as code',
+};
+
+/** The service line as drawn in the diagram box. */
+export const diagramService = (node: ArchNode): string =>
+  DIAGRAM_SERVICE[node.id] ?? node.awsService;

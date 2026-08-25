@@ -11,3 +11,7 @@ cdk.out
 
 docs/research/*.html
 docs/research/*.csv
+
+# Machine-authored. Regenerate with scripts/build-code-examples.mjs; formatting it
+# by hand would make every regeneration fail the format check.
+packages/web/src/generated

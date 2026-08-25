@@ -1,0 +1,30 @@
+# HELP oat_uptime_seconds Seconds since process start.
+# TYPE oat_uptime_seconds gauge
+oat_uptime_seconds 46734
+# TYPE oat_kafka_events_published_total counter
+oat_kafka_events_published_total 168
+# TYPE oat_telemetry_accepted_total counter
+oat_telemetry_accepted_total 168
+# TYPE oat_http_requests_total counter
+oat_http_requests_total 28439
+# TYPE oat_telemetry_rejected_total counter
+oat_telemetry_rejected_total 5
+# TYPE oat_reports_requested_total counter
+oat_reports_requested_total 2
+# TYPE oat_reports_enqueued_total counter
+oat_reports_enqueued_total 2
+# HELP oat_http_request_duration_ms Request duration in milliseconds.
+# TYPE oat_http_request_duration_ms histogram
+oat_http_request_duration_ms_bucket{le="1"} 1799
+oat_http_request_duration_ms_bucket{le="5"} 2005
+oat_http_request_duration_ms_bucket{le="10"} 2007
+oat_http_request_duration_ms_bucket{le="25"} 2009
+oat_http_request_duration_ms_bucket{le="50"} 2009
+oat_http_request_duration_ms_bucket{le="100"} 2009
+oat_http_request_duration_ms_bucket{le="250"} 2009
+oat_http_request_duration_ms_bucket{le="500"} 2048
+oat_http_request_duration_ms_bucket{le="1000"} 2048
+oat_http_request_duration_ms_bucket{le="2500"} 2048
+oat_http_request_duration_ms_bucket{le="5000"} 2048
+oat_http_request_duration_ms_bucket{le="+Inf"} 2048
+oat_http_request_duration_ms_sum 30588.016

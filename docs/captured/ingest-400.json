@@ -1,0 +1,30 @@
+{
+  "error": "invalid_telemetry",
+  "message": "Telemetry report failed validation.",
+  "issues": [
+    {
+      "path": "timestamp",
+      "message": "Invalid datetime"
+    },
+    {
+      "path": "position.latitude",
+      "message": "Number must be less than or equal to 90"
+    },
+    {
+      "path": "altitude_ft",
+      "message": "Required"
+    },
+    {
+      "path": "groundspeed_kts",
+      "message": "Required"
+    },
+    {
+      "path": "heading_deg",
+      "message": "Required"
+    },
+    {
+      "path": "engine",
+      "message": "Required"
+    }
+  ]
+}

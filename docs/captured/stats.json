@@ -1,0 +1,51 @@
+{
+  "fleet": {
+    "aircraft_total": 22,
+    "aircraft_active": 0,
+    "aircraft_stale": 0,
+    "aircraft_lost": 22,
+    "telemetry_rows": 369,
+    "telemetry_last_minute": 0,
+    "alerts_total": 18,
+    "alerts_critical_last_hour": 0,
+    "reports_pending": 0,
+    "reports_completed": 4,
+    "reports_failed": 3
+  },
+  "stream": {
+    "topic": "aircraft.telemetry.v1",
+    "consumer_group": "telemetry-processors",
+    "connected": true,
+    "lag": {
+      "total_lag": 0,
+      "partitions": [
+        {
+          "partition": 1,
+          "end_offset": 126,
+          "committed_offset": 126,
+          "lag": 0
+        },
+        {
+          "partition": 2,
+          "end_offset": 103,
+          "committed_offset": 103,
+          "lag": 0
+        },
+        {
+          "partition": 0,
+          "end_offset": 145,
+          "committed_offset": 145,
+          "lag": 0
+        }
+      ]
+    }
+  },
+  "jobs": {
+    "queue": "aircraft.report.generate",
+    "connected": true,
+    "depth": {
+      "pending": 0,
+      "dead_lettered": 3
+    }
+  }
+}
