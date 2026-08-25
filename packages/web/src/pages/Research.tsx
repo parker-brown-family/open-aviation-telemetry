@@ -316,19 +316,12 @@ export function Research(): React.JSX.Element {
   return (
     <div className="stack">
       <div className="page__head">
-        <h1>Twenty-one lessons in aircraft telemetry</h1>
+        <h1>Lessons in aircraft telemetry</h1>
         <p>
-          Each of these is a hard case in flight data, checked against the standard that actually
-          governs it — ADS-B, ARINC 429, ICAO Annex 10, Iridium SBD — rather than against intuition.
-          They were collected before this project’s telemetry schema hardened, and several of them
-          changed it.
-        </p>
-        <p>
-          Every lesson has the same shape: what the quantity looks like if you have never met it,
-          how it is really encoded on the wire, what breaks in code that assumes the first thing,
-          and what a system that knows better does instead. The lessons stand on their own — none of
-          them is specific to this codebase, and most of them cost somebody a real incident before
-          they were written down.
+          If you have never worked in aircraft telemetry, tracking real-time data in three
+          dimensions — where machine failure puts people’s lives in danger — is a steep learning
+          curve. Here are some problem → solution sets to read through, to get used to the language
+          and the concepts the industry uses.
         </p>
         <p className="rs-meta">
           {RESEARCH_TOTALS.subjects} lessons · {RESEARCH_GROUPS.length} clusters ·{' '}
