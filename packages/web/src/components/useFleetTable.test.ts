@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { act, renderHook } from '@testing-library/react';
 import type { AircraftState } from '@oat/shared';
-import { matches, sortAircraft, type SortState } from './useFleetTable.js';
+import { matches, sortAircraft, useFleetTable, type SortState } from './useFleetTable.js';
 
 function aircraft(overrides: Partial<AircraftState> = {}): AircraftState {
   const base: AircraftState = {
@@ -67,10 +68,10 @@ describe('matches', () => {
   });
 });
 
-describe('sortAircraft', () => {
-  const desc = (key: SortState['key']): SortState => ({ key, direction: 'desc' });
-  const asc = (key: SortState['key']): SortState => ({ key, direction: 'asc' });
+const desc = (key: SortState['key']): SortState => ({ key, direction: 'desc' });
+const asc = (key: SortState['key']): SortState => ({ key, direction: 'asc' });
 
+describe('sortAircraft', () => {
   const fast = aircraft({
     aircraft_id: 'C-GFAST',
     latest: { ...aircraft().latest!, groundspeed_kts: 460, altitude_ft: 34000 },
@@ -136,5 +137,122 @@ describe('sortAircraft', () => {
 
   it('handles an empty list', () => {
     expect(sortAircraft([], desc('callsign'))).toEqual([]);
+  });
+});
+
+describe('sorting the text columns', () => {
+  const fleet = [
+    aircraft({ aircraft_id: 'A', type_icao: 'C172', status: 'stale', flight_phase: 'descent' }),
+    aircraft({ aircraft_id: 'B', type_icao: 'B738', status: 'active', flight_phase: 'climb' }),
+  ];
+
+  it('sorts on aircraft type', () => {
+    expect(sortAircraft(fleet, asc('type_icao')).map((a) => a.type_icao)).toEqual(['B738', 'C172']);
+  });
+
+  it('sorts on status', () => {
+    expect(sortAircraft(fleet, asc('status')).map((a) => a.status)).toEqual(['active', 'stale']);
+  });
+
+  it('sorts on flight phase', () => {
+    expect(sortAircraft(fleet, asc('flight_phase')).map((a) => a.flight_phase)).toEqual([
+      'climb',
+      'descent',
+    ]);
+  });
+});
+
+/**
+ * The hook around those functions. What it adds is state: the query, the sort,
+ * and the rule for what a column click means — none of which the pure
+ * functions above can express.
+ */
+describe('useFleetTable', () => {
+  const fleet = [
+    aircraft({ aircraft_id: 'C-GAAA', callsign: 'OKA101', latest: undefined }),
+    aircraft({ aircraft_id: 'C-GBBB', callsign: 'WJA202', operator: 'WestJet' }),
+  ];
+
+  it('returns every aircraft before anything is typed', () => {
+    const { result } = renderHook(() => useFleetTable(fleet));
+    expect(result.current.rows).toHaveLength(2);
+  });
+
+  it('narrows the rows to the query', () => {
+    const { result } = renderHook(() => useFleetTable(fleet));
+    act(() => result.current.setQuery('westjet'));
+    expect(result.current.rows.map((a) => a.callsign)).toEqual(['WJA202']);
+  });
+
+  it('returns nothing when the query matches nothing', () => {
+    // An empty result is a real answer. Falling back to the whole fleet would
+    // read as "all of these match".
+    const { result } = renderHook(() => useFleetTable(fleet));
+    act(() => result.current.setQuery('nothing-like-this'));
+    expect(result.current.rows).toHaveLength(0);
+  });
+
+  it('starts a newly clicked column descending', () => {
+    // Altitude, speed and recency are all interesting at the top; ascending
+    // first would make every operator click twice.
+    const { result } = renderHook(() => useFleetTable(fleet));
+    act(() => result.current.toggleSort('altitude_ft'));
+    expect(result.current.sort).toEqual({ key: 'altitude_ft', direction: 'desc' });
+  });
+
+  it('flips direction when the same column is clicked again', () => {
+    const { result } = renderHook(() => useFleetTable(fleet));
+    act(() => result.current.toggleSort('callsign'));
+    act(() => result.current.toggleSort('callsign'));
+    expect(result.current.sort).toEqual({ key: 'callsign', direction: 'asc' });
+
+    act(() => result.current.toggleSort('callsign'));
+    expect(result.current.sort.direction).toBe('desc');
+  });
+
+  it('restarts at descending when moving to a different column', () => {
+    const { result } = renderHook(() => useFleetTable(fleet));
+    act(() => result.current.toggleSort('callsign'));
+    act(() => result.current.toggleSort('callsign'));
+    expect(result.current.sort.direction).toBe('asc');
+
+    act(() => result.current.toggleSort('altitude_ft'));
+    expect(result.current.sort).toEqual({ key: 'altitude_ft', direction: 'desc' });
+  });
+
+  it('marks only the active column in the header classes', () => {
+    const { result } = renderHook(() => useFleetTable(fleet));
+    act(() => result.current.toggleSort('callsign'));
+
+    expect(result.current.headerClass('callsign')).toBe('sortable sorted');
+    expect(result.current.headerClass('altitude_ft')).toBe('sortable');
+
+    act(() => result.current.toggleSort('callsign'));
+    expect(result.current.headerClass('callsign')).toBe('sortable sorted-asc');
+  });
+
+  it('honours the initial sort it is given', () => {
+    const { result } = renderHook(() => useFleetTable(fleet, asc('callsign')));
+    expect(result.current.rows.map((a) => a.callsign)).toEqual(['OKA101', 'WJA202']);
+  });
+
+  it('keeps the query applied across a sort change', () => {
+    const { result } = renderHook(() => useFleetTable(fleet));
+    act(() => result.current.setQuery('OKA'));
+    act(() => result.current.toggleSort('callsign'));
+    expect(result.current.rows).toHaveLength(1);
+  });
+
+  it('re-filters when new telemetry arrives', () => {
+    // The fleet is re-polled every few seconds. A query typed before a poll has
+    // to still hold after it, or the table clears itself while being read.
+    const { result, rerender } = renderHook(({ list }) => useFleetTable(list), {
+      initialProps: { list: fleet },
+    });
+    act(() => result.current.setQuery('WJA'));
+    expect(result.current.rows).toHaveLength(1);
+
+    rerender({ list: [...fleet, aircraft({ aircraft_id: 'C-GCCC', callsign: 'WJA303' })] });
+    expect(result.current.rows.map((a) => a.callsign).sort()).toEqual(['WJA202', 'WJA303']);
   });
 });
