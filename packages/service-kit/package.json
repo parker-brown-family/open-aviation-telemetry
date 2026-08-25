@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@oat/shared": "workspace:*",
-    "amqplib": "^0.10.5",
+    "amqplib": "^2.0.1",
     "kafkajs": "^2.2.4",
     "pino": "^9.6.0",
     "pino-pretty": "^13.0.0"
