@@ -19,6 +19,15 @@ export interface Evidence {
   href: string;
   /** Bundled files resolve against import.meta.env.BASE_URL at render. */
   local?: boolean;
+  /**
+   * Open in the document viewer rather than navigating.
+   *
+   * A certificate is something you glance at and dismiss. Sending the reader to
+   * a PDF in a new tab costs them their place on this page and hands them a
+   * browser chrome they then have to close; the viewer shows the thing over the
+   * page and gives it back when they press Escape.
+   */
+  viewer?: boolean;
 }
 
 export interface Credential {
@@ -52,19 +61,58 @@ export const KIND_ORDER: CredentialKind[] = [
 
 export const CREDENTIALS: Credential[] = [
   {
+    id: 'aws-eks-track',
+    kind: 'certification',
+    title: 'Why run Kubernetes workloads on Amazon EKS?',
+    issuer: 'AWS Training and Certification',
+    when: '25 August 2026',
+    summary: 'The case for managed control planes — and what EKS takes off your hands.',
+    detail:
+      'What a managed control plane buys and what it costs: who patches the API server, what happens to etcd, and which of the operational burdens of self-hosted Kubernetes actually disappear rather than move. The third of three completions on the EKS track, and the one that argues for the choice this repository already made.',
+    evidence: [
+      {
+        label: 'Completion certificate',
+        href: 'credentials/aws-why-run-kubernetes-on-eks.pdf',
+        local: true,
+        viewer: true,
+      },
+      { label: 'The training plan it belongs to', href: 'training', local: true },
+    ],
+  },
+  {
+    id: 'aws-kubernetes-core-concepts',
+    kind: 'certification',
+    title: 'Introduction to Kubernetes Core Concepts',
+    issuer: 'AWS Training and Certification',
+    when: '25 August 2026',
+    summary: 'Pods, services, deployments — the objects the Helm chart in this repo declares.',
+    detail:
+      'The Kubernetes object model: pods, services, deployments, and the reconciliation loop that makes declaring desired state a workable idea rather than a slogan. This repository ships a Helm umbrella chart that declares those objects, so this is the layer beneath what was already written by hand.',
+    evidence: [
+      {
+        label: 'Completion certificate',
+        href: 'credentials/aws-introduction-to-kubernetes-core-concepts.pdf',
+        local: true,
+        viewer: true,
+      },
+      { label: 'The training plan it belongs to', href: 'training', local: true },
+    ],
+  },
+  {
     id: 'aws-container-basics',
     kind: 'certification',
     title: 'Introduction to Container Basics',
     issuer: 'AWS Training and Certification',
     when: '25 August 2026',
-    summary: 'AWS completion certificate — the first item on the training plan, finished.',
+    summary: 'Where the EKS track starts: images, layers, and the container lifecycle.',
     detail:
-      'Container fundamentals as AWS teaches them: images and layers, the container lifecycle, and where containers sit relative to the services that schedule them. It is the entry point to the EKS track rather than the destination — this repository already ships one image per service, so the value here is the vocabulary and the AWS-specific framing rather than the mechanics.',
+      'Container fundamentals as AWS teaches them: images and layers, the container lifecycle, and where containers sit relative to the services that schedule them. The entry point to the EKS track rather than the destination — this repository already ships one image per service, so the value is the vocabulary and the AWS-specific framing rather than the mechanics.',
     evidence: [
       {
-        label: 'Completion certificate (PDF)',
+        label: 'Completion certificate',
         href: 'credentials/aws-introduction-to-container-basics.pdf',
         local: true,
+        viewer: true,
       },
       { label: 'The training plan it belongs to', href: 'training', local: true },
     ],

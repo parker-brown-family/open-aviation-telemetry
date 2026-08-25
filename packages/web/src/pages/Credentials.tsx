@@ -8,6 +8,7 @@ import {
   type Evidence,
 } from '../credentials-data.js';
 import { Panel } from '../components/primitives.js';
+import { DocViewer } from '../components/DocViewer.js';
 
 /**
  * Credentials and accomplishments.
@@ -32,10 +33,12 @@ function Card({
   credential,
   open,
   onToggle,
+  onView,
 }: {
   credential: Credential;
   open: boolean;
   onToggle: (id: string) => void;
+  onView: (doc: { title: string; src: string }) => void;
 }): React.JSX.Element {
   const bodyId = `credential-${credential.id}`;
   return (
@@ -68,17 +71,34 @@ function Card({
             <div className="cr-evidence">
               <span className="cr-evidence__label">Evidence</span>
               <ul>
-                {credential.evidence.map((item) => (
-                  <li key={item.href}>
-                    <a
-                      href={href(item)}
-                      target={item.local ? undefined : '_blank'}
-                      rel={item.local ? undefined : 'noreferrer noopener'}
-                    >
-                      {item.label} {item.local ? '' : '↗'}
-                    </a>
-                  </li>
-                ))}
+                {credential.evidence.map((item) =>
+                  item.viewer ? (
+                    <li key={item.href}>
+                      <button
+                        type="button"
+                        className="cr-evidence__view"
+                        onClick={() =>
+                          onView({
+                            title: `${credential.title} — ${credential.issuer}`,
+                            src: href(item),
+                          })
+                        }
+                      >
+                        {item.label} ⤢
+                      </button>
+                    </li>
+                  ) : (
+                    <li key={item.href}>
+                      <a
+                        href={href(item)}
+                        target={item.local ? undefined : '_blank'}
+                        rel={item.local ? undefined : 'noreferrer noopener'}
+                      >
+                        {item.label} {item.local ? '' : '↗'}
+                      </a>
+                    </li>
+                  ),
+                )}
               </ul>
             </div>
           ) : (
@@ -121,6 +141,26 @@ export function Credentials(): React.JSX.Element {
     [openIds, setParams],
   );
 
+  /**
+   * The document on screen, and the control that opened it.
+   *
+   * The trigger is kept so focus can go back to it on close. Without that, a
+   * keyboard reader dismissing the viewer lands at the top of the document and
+   * has to tab all the way back to where they were.
+   */
+  const [viewing, setViewing] = useState<{ title: string; src: string } | null>(null);
+  const [trigger, setTrigger] = useState<HTMLElement | null>(null);
+
+  const view = useCallback((doc: { title: string; src: string }) => {
+    setTrigger(document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    setViewing(doc);
+  }, []);
+
+  const closeViewer = useCallback(() => {
+    setViewing(null);
+    trigger?.focus();
+  }, [trigger]);
+
   const withEvidence = CREDENTIALS.filter((item) => item.evidence.length > 0).length;
 
   return (
@@ -148,11 +188,14 @@ export function Credentials(): React.JSX.Element {
                 credential={credential}
                 open={openIds.has(credential.id)}
                 onToggle={toggle}
+                onView={view}
               />
             ))}
           </Panel>
         );
       })}
+
+      {viewing ? <DocViewer title={viewing.title} src={viewing.src} onClose={closeViewer} /> : null}
     </div>
   );
 }

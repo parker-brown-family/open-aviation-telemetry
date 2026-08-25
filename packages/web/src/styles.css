@@ -2688,3 +2688,131 @@ button.small {
   color: rgb(var(--fg-faint)) !important;
   max-width: 78ch;
 }
+
+/* ---------------------------------------------------------------- doc viewer */
+
+/*
+ * The document viewer.
+ *
+ * Sits over the whole console, so it is the one place the surveying grid and
+ * the olive glow are deliberately hidden: a certificate is a white page, and
+ * anything showing through behind it reads as a rendering fault rather than as
+ * theme. The frame keeps the notched corner so it still belongs here.
+ */
+
+.dv {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 20px;
+}
+
+.dv__scrim {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: rgb(10 10 6 / 0.82);
+  backdrop-filter: blur(3px);
+  cursor: pointer;
+}
+
+.dv__scrim:hover:not(:disabled) {
+  background: rgb(10 10 6 / 0.82);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.dv__box {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(1080px, 100%);
+  height: min(88vh, 100%);
+  background: rgb(var(--bg-2));
+  border: 1.5px solid rgb(var(--olive) / 0.55);
+  box-shadow: 0 0 40px rgb(0 0 0 / 0.6);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+}
+
+.dv__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgb(var(--olive) / 0.35);
+  background: rgb(var(--olive) / 0.08);
+}
+
+.dv__title {
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(var(--olive-pale));
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dv__actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.dv__close {
+  margin-left: 2px;
+}
+
+.dv__frame {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  /* The PDF renders on white; anything else makes the page look broken. */
+  background: #fff;
+}
+
+@media (max-width: 700px) {
+  .dv {
+    padding: 12px 10px;
+  }
+
+  .dv__box {
+    height: 92vh;
+  }
+}
+
+/* The control that opens it: a link in every way except that it is a button,
+   because it does not navigate. */
+.cr-evidence__view {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgb(var(--olive-bright));
+  cursor: pointer;
+}
+
+.cr-evidence__view:hover:not(:disabled) {
+  color: rgb(var(--orange));
+  background: none;
+  border-color: transparent;
+  box-shadow: none;
+  text-decoration: underline;
+}
