@@ -1,5 +1,8 @@
 # Open Aviation Telemetry
 
+[![CI](https://github.com/parker-brown-family/open-aviation-telemetry/actions/workflows/ci.yml/badge.svg)](https://github.com/parker-brown-family/open-aviation-telemetry/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 An open-source AWS reference architecture for aircraft telemetry: ingest position
 reports over HTTP, publish them to Kafka, derive alerts in a stream processor,
 generate reports on a queue worker, and show the whole thing on an operations
@@ -215,6 +218,11 @@ Three layers, on purpose:
 The end-to-end suite is separate from `pnpm test` deliberately: a failure there
 should mean "the code is wrong", never "Docker is not running".
 
+CI runs all three. The end-to-end job brings up PostgreSQL, Kafka, RabbitMQ and
+all four services on a GitHub Actions runner and asserts the pipeline from the
+outside — so the badge above means the architecture works, not just that it
+compiles.
+
 ---
 
 ## Deploying to AWS
@@ -247,7 +255,9 @@ Full walkthrough in [docs/aws-deployment.md](docs/aws-deployment.md).
 
 ## The published demo page
 
-A build of the client is published as a static page. **No API is attached to it.**
+A build of the client is published at
+<https://parker.brownfamilysports.com/aircraft-telemetry/>. **No API is attached
+to it.**
 
 That page detects it cannot reach an API and says so in a permanent banner, then
 renders a bundled sample dataset so the architecture explorer is still usable.
