@@ -157,13 +157,32 @@ describe('PlanView', () => {
     expect(glyph?.getAttribute('transform')).toContain('rotate(137)');
   });
 
-  it('reports the selected aircraft when a glyph is clicked', async () => {
+  it('reports the selected aircraft when its target is clicked', async () => {
     const onSelect = vi.fn();
     const { container } = render(<PlanView aircraft={[aircraft()]} onSelect={onSelect} />);
-    const glyph = container.querySelector('.pv-aircraft');
-    expect(glyph).not.toBeNull();
-    await userEvent.click(glyph!);
+    const hit = container.querySelector('.pv-hit');
+    expect(hit).not.toBeNull();
+    await userEvent.click(hit!);
     expect(onSelect).toHaveBeenCalledWith('C-GABC');
+  });
+
+  it('gives each target a hit area larger than the drawn glyph', () => {
+    // The glyph renders at roughly 14x16 CSS pixels and is concave, so parts of
+    // its own bounding box are not clickable. Interaction lives on a
+    // transparent disc instead; this pins that it is actually bigger.
+    const { container } = render(<PlanView aircraft={[aircraft()]} />);
+    const hit = container.querySelector('.pv-hit');
+    expect(hit).not.toBeNull();
+    // Glyph half-extent is 1.15 viewBox units; the disc must exceed it.
+    expect(Number(hit!.getAttribute('r'))).toBeGreaterThan(1.15);
+  });
+
+  it('hides the decorative glyph from assistive tech, labelling the target instead', () => {
+    // Two overlapping elements for one aircraft would otherwise be announced
+    // twice. The disc carries the label; the triangle is decoration.
+    const { container } = render(<PlanView aircraft={[aircraft()]} />);
+    expect(container.querySelector('.pv-aircraft')?.getAttribute('aria-hidden')).toBe('true');
+    expect(container.querySelector('.pv-hit')?.getAttribute('aria-label')).toMatch(/OKA101/);
   });
 
   it('draws every reference airport so the scope has fixed points', () => {

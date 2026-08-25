@@ -350,12 +350,22 @@ export function PlanView({
                   </g>
                 ) : null}
 
-                {/* A triangle rotated to the reported track: the glyph shows
-                    direction of travel, which a dot cannot. */}
-                <polygon
-                  className={`pv-aircraft${suffix}`}
-                  points="0,-1.15 0.78,0.9 0,0.45 -0.78,0.9"
-                  transform={`translate(${p.x.toFixed(2)} ${p.y.toFixed(2)}) rotate(${latest.heading_deg.toFixed(0)})`}
+                {/*
+                  An invisible hit target.
+
+                  The glyph itself renders at roughly 14x16 CSS pixels — below
+                  the 24px minimum for a pointer target, and it is a concave
+                  arrow, so parts of its bounding box are not clickable at all.
+                  A transparent disc gives a forgiving target without changing
+                  what is drawn. It carries the interaction; the visible glyph
+                  is then purely decorative and is hidden from assistive tech.
+                */}
+                <circle
+                  className="pv-hit"
+                  cx={p.x}
+                  cy={p.y}
+                  r={1.7}
+                  fill="transparent"
                   onClick={() => onSelect?.(ac.aircraft_id)}
                   role="button"
                   tabIndex={0}
@@ -371,7 +381,17 @@ export function PlanView({
                     {ac.callsign ?? ac.aircraft_id} — {Math.round(latest.altitude_ft)} ft,{' '}
                     {Math.round(latest.groundspeed_kts)} kt, track {Math.round(latest.heading_deg)}°
                   </title>
-                </polygon>
+                </circle>
+
+                {/* A triangle rotated to the reported track: the glyph shows
+                    direction of travel, which a dot cannot. */}
+                <polygon
+                  className={`pv-aircraft${suffix}`}
+                  points="0,-1.15 0.78,0.9 0,0.45 -0.78,0.9"
+                  transform={`translate(${p.x.toFixed(2)} ${p.y.toFixed(2)}) rotate(${latest.heading_deg.toFixed(0)})`}
+                  aria-hidden="true"
+                  pointerEvents="none"
+                />
               </g>
             );
           })}

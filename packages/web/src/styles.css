@@ -715,6 +715,48 @@ button.small {
   fill: rgb(var(--orange));
 }
 
+/*
+ * Suppress the browser's own focus ring on a target glyph.
+ *
+ * The glyph carries tabindex so it can be reached and activated from the
+ * keyboard. A MOUSE click focuses it too, but does not match :focus-visible —
+ * so the global orange rule never fires and Chrome falls back to its UA
+ * `outline: auto`. That ring is contrast-aware: on this dark map it paints
+ * white, and 5px of it around an 11px glyph renders as a solid white disc
+ * covering the very target it is meant to indicate. It then persists until
+ * focus moves, so the map appears to have a glare spot stuck on it.
+ *
+ * Keyboard focus still needs an indicator. `outline` on SVG shapes renders
+ * inconsistently across browsers and ignores the glyph's rotation, so the
+ * keyboard case gets a bright stroke halo instead — which hugs the triangle
+ * and stays correct at any heading.
+ */
+.pv-aircraft:focus,
+.pv-hit:focus {
+  outline: none;
+}
+
+.pv-hit:focus-visible {
+  outline: none;
+}
+
+/* The hit target is invisible, so the keyboard indicator goes on the glyph it
+   sits over — a sibling selector, since the glyph follows it in the DOM. */
+.pv-hit:focus-visible + .pv-aircraft,
+.pv-aircraft:focus-visible {
+  stroke: rgb(var(--orange-bright));
+  stroke-width: 0.45;
+  paint-order: stroke fill;
+}
+
+.pv-hit {
+  cursor: pointer;
+}
+
+.pv-hit:hover + .pv-aircraft {
+  fill: rgb(var(--orange-bright));
+}
+
 .pv-leader {
   stroke: rgb(var(--olive-bright) / 0.55);
   stroke-width: 0.11;
@@ -826,6 +868,22 @@ button.small {
   fill: rgb(var(--orange) / 0.14);
   stroke: rgb(var(--orange));
   stroke-width: 0.35;
+}
+
+/* Same UA focus-ring problem as the map glyphs — see .pv-aircraft:focus. The
+   node is a <g> with tabindex, so a mouse click draws Chrome's white `auto`
+   ring around the whole box. Keyboard focus gets the orange border instead. */
+.arch__node:focus {
+  outline: none;
+}
+
+.arch__node:focus-visible {
+  outline: none;
+}
+
+.arch__node:focus-visible rect {
+  stroke: rgb(var(--orange-bright));
+  stroke-width: 0.45;
 }
 
 .arch__node--highlight rect {
