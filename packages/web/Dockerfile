@@ -32,7 +32,7 @@ ARG VITE_BASE_PATH="/"
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 RUN pnpm --filter @oat/web exec vite build --base "${VITE_BASE_PATH}"
 
-FROM nginx:1.27-alpine AS runtime
+FROM nginx:1.31-alpine AS runtime
 COPY --from=build /repo/packages/web/dist /usr/share/nginx/html
 COPY packages/web/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
