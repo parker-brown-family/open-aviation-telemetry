@@ -1606,8 +1606,20 @@ button.small {
 }
 
 .rs-case__chevron {
+  display: inline-flex;
+  align-self: center;
   color: rgb(var(--olive-pale));
-  font-size: 11px;
+  transition: transform 140ms ease;
+}
+
+.rs-case.is-open .rs-case__chevron {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rs-case__chevron {
+    transition: none;
+  }
 }
 
 .rs-case__title {

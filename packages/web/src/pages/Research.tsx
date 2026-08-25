@@ -108,8 +108,12 @@ function Case({
         aria-controls={bodyId}
         onClick={() => onToggle(subject.id)}
       >
+        {/* Drawn rather than typed: Share Tech Mono has no ▸ glyph, so the
+            character falls back to a different font and renders as a dot. */}
         <span className="rs-case__chevron" aria-hidden="true">
-          {open ? '▾' : '▸'}
+          <svg width="7" height="9" viewBox="0 0 7 9" fill="none">
+            <path d="M0.5 0.5 L6.5 4.5 L0.5 8.5 Z" fill="currentColor" />
+          </svg>
         </span>
         <span className="rs-case__title">
           <span className="rs-case__name">{subject.label}</span>

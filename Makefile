@@ -107,6 +107,10 @@ down: ## Stop everything and delete the volumes
 
 # ------------------------------------------------------------------ web build
 
+.PHONY: research-data
+research-data: ## Regenerate the research page's data from docs/research
+	node scripts/build-research-data.mjs
+
 .PHONY: web-build
 web-build: ## Build the static client for publishing under a subdirectory
 	VITE_API_BASE_URL="$(VITE_API_BASE_URL)" \

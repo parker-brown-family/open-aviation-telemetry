@@ -15,7 +15,11 @@ does not count.
 | Rule       | `real_encoding` and `standard` were **source-required** — bit widths, ranges and units are exactly what a model confabulates fluently, so no citation meant no credit |
 
 - **[telemetry-difficult-cases.md](telemetry-difficult-cases.md)** — the full findings
-- [telemetry-difficult-cases.html](telemetry-difficult-cases.html) — same, as a browsable page
+- **[The Research tab in the console](https://parker.brownfamilysports.com/aircraft-telemetry/research)**
+  — the same findings as a page in the app: one collapsible card per case, each
+  value tagged with how well it is sourced. Built from the artefacts here by
+  `make research-data`, so the page cannot drift from the run
+- [telemetry-difficult-cases.html](telemetry-difficult-cases.html) — the raw generated page
 - [telemetry-difficult-cases.csv](telemetry-difficult-cases.csv) — for a spreadsheet
 - [run.json](run.json) — scores, gaps and provenance for every field
 
