@@ -11,6 +11,7 @@ import {
   fitLabel,
   fitService,
 } from '../components/diagramText.js';
+import { trimEdge } from '../components/edgeGeometry.js';
 import { NodeDetail } from '../components/NodeDetail.js';
 import { Panel, Pill } from '../components/primitives.js';
 
@@ -97,6 +98,9 @@ function ArchDiagram({
 
         <g>
           {ARCH_EDGES.map((edge) => {
+            const fromNode = NODE_BY_ID.get(edge.from);
+            const toNode = NODE_BY_ID.get(edge.to);
+            if (!fromNode || !toNode) return null;
             const a = centre(edge.from);
             const b = centre(edge.to);
             // Curve the link so parallel routes between the same columns do not
@@ -105,7 +109,14 @@ function ArchDiagram({
             const my = (a.y + b.y) / 2 - Math.abs(b.y - a.y) * 0.12;
             const control = { x: mx, y: my };
             const chipW = edgeLabelWidth(edge.label) + 1;
-            const at = labelPoint(a, b, control, chipW);
+            // Anchored centre-to-centre, drawn border-to-border: otherwise every
+            // connector is ruled across the label of the box it points at.
+            const cut = trimEdge(a, control, b, fromNode, toNode);
+            // Place the label against the trimmed curve rather than the full
+            // one. Measured against the full curve, the midpoint of a short
+            // edge lands beyond the ink — the "publish telemetry" chip sat over
+            // its own arrowhead and the edge looked like it stopped at the label.
+            const at = labelPoint(cut.a, cut.b, cut.control, chipW);
             return (
               <g
                 key={`${edge.from}-${edge.to}`}
@@ -113,7 +124,7 @@ function ArchDiagram({
               >
                 <path
                   className={`arch__edge arch__edge--${edge.kind}`}
-                  d={`M${a.x} ${a.y} Q${mx} ${my} ${b.x} ${b.y}`}
+                  d={`M${cut.a.x} ${cut.a.y} Q${cut.control.x} ${cut.control.y} ${cut.b.x} ${cut.b.y}`}
                   markerEnd="url(#arrow)"
                   style={{ color: 'currentColor' }}
                 />
