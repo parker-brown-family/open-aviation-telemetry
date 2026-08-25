@@ -1462,3 +1462,413 @@ button.small {
   height: 8px;
   display: inline-block;
 }
+
+/* ---------------------------------------------------------------- research */
+
+/*
+ * The research page.
+ *
+ * Twenty-one cases of dense reference prose, in a console whose type is a
+ * narrow monospace. Two rules follow from that and drive everything below:
+ *
+ *   1. Colour carries one meaning only — severity. The generated report this
+ *      page replaces coloured the prose by provenance (blue for a cited value,
+ *      gold for an uncited one), which put a legend-less code inside the text
+ *      itself. Provenance is a labelled tag here; the prose stays body colour.
+ *
+ *   2. Reading prose in Share Tech Mono needs room. Case bodies drop the
+ *      uppercase tracking, widen the line height and cap the measure, so an
+ *      opened case reads like a document rather than like a HUD readout.
+ */
+
+.rs-intro {
+  margin: 0 0 12px;
+  max-width: 92ch;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ── legend ─────────────────────────────────────────────────────────────── */
+
+.rs-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 20px;
+}
+
+.rs-legend__list {
+  list-style: none;
+  margin: 9px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.rs-legend__list li {
+  display: grid;
+  grid-template-columns: 124px minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ── controls ───────────────────────────────────────────────────────────── */
+
+.rs-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.rs-search {
+  font: inherit;
+  font-size: 12px;
+  padding: 5px 10px;
+  width: 280px;
+  max-width: 100%;
+  color: rgb(var(--fg));
+  background: rgb(var(--bg) / 0.6);
+  border: 1px solid rgb(var(--olive) / 0.5);
+  border-radius: var(--radius);
+}
+
+.rs-search::placeholder {
+  color: rgb(var(--fg-faint));
+}
+
+.rs-search:focus-visible {
+  outline: 2px solid rgb(var(--orange) / 0.75);
+  outline-offset: 1px;
+}
+
+.rs-controls .button-row {
+  margin-left: auto;
+}
+
+/* ── a case ─────────────────────────────────────────────────────────────── */
+
+.rs-cases {
+  padding: 0;
+}
+
+.rs-case + .rs-case {
+  border-top: 1px solid rgb(var(--olive) / 0.2);
+}
+
+/*
+ * The whole header row is the disclosure control, so the hit target is the
+ * width of the panel rather than a chevron. That means resetting the console's
+ * button styling — border, uppercase, centre alignment — back to a plain row.
+ */
+.rs-case__head {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto auto;
+  align-items: baseline;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 0;
+  border-left: 2px solid transparent;
+  border-radius: 0;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  color: rgb(var(--fg));
+  background: transparent;
+}
+
+.rs-case__head:hover:not(:disabled) {
+  background: rgb(var(--olive) / 0.08);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.rs-case__head:focus-visible {
+  outline: 2px solid rgb(var(--orange) / 0.8);
+  outline-offset: -2px;
+}
+
+/* Severity, on the leading edge — the one place colour is spent on this page. */
+.rs-case--schema-breaking .rs-case__head {
+  border-left-color: rgb(var(--red) / 0.75);
+}
+.rs-case--logic-breaking .rs-case__head {
+  border-left-color: rgb(var(--amber) / 0.75);
+}
+.rs-case--informational .rs-case__head {
+  border-left-color: rgb(var(--olive) / 0.6);
+}
+
+.rs-case.is-open .rs-case__head {
+  background: rgb(var(--olive) / 0.07);
+}
+
+.rs-case__chevron {
+  color: rgb(var(--olive-pale));
+  font-size: 11px;
+}
+
+.rs-case__title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rs-case__name {
+  font-size: 13.5px;
+  letter-spacing: 0.04em;
+  color: rgb(var(--fg));
+}
+
+/* One line of context per case; the full text is one click away. */
+.rs-case__summary {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: rgb(var(--fg-muted));
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+
+.rs-case.is-open .rs-case__summary {
+  display: none;
+}
+
+.rs-case__cited {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(var(--fg-faint));
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.rs-sev {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding: 2px 8px;
+  border-radius: var(--radius);
+  border: 1px solid;
+}
+
+.rs-sev--schema-breaking {
+  color: rgb(var(--red));
+  border-color: rgb(var(--red) / 0.5);
+  background: rgb(var(--red) / 0.1);
+}
+.rs-sev--logic-breaking {
+  color: rgb(var(--amber));
+  border-color: rgb(var(--amber) / 0.5);
+  background: rgb(var(--amber) / 0.1);
+}
+.rs-sev--informational {
+  color: rgb(var(--olive-pale));
+  border-color: rgb(var(--olive) / 0.5);
+  background: rgb(var(--olive) / 0.1);
+}
+
+/* ── an opened case ─────────────────────────────────────────────────────── */
+
+.rs-case__body {
+  padding: 4px 16px 18px 40px;
+  border-left: 2px solid transparent;
+}
+
+.rs-case__sev-note {
+  margin: 0 0 12px;
+  font-size: 11px;
+  color: rgb(var(--fg-faint));
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.rs-fields {
+  margin: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.rs-field {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 8px 18px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .rs-field {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3px;
+  }
+
+  .rs-case__body {
+    padding-left: 16px;
+  }
+}
+
+.rs-field__key {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgb(var(--fg-faint));
+}
+
+.rs-field__value {
+  margin: 0;
+  max-width: 88ch;
+}
+
+.rs-field__value p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.72;
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgb(var(--fg));
+}
+
+/* The run's own note on why a value is reasoned rather than published. */
+.rs-field__caveat {
+  margin-top: 6px !important;
+  padding-left: 10px;
+  border-left: 1px solid rgb(var(--olive) / 0.35);
+  font-size: 11.5px !important;
+  color: rgb(var(--fg-muted)) !important;
+}
+
+.rs-field__source {
+  display: inline-block;
+  margin-top: 5px;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ── provenance tags ────────────────────────────────────────────────────── */
+
+/*
+ * Deliberately quiet. A tag is a qualifier on a value, not a status the reader
+ * needs to scan for, so these read as labels rather than competing with the
+ * severity colour. `cited` gets the olive because sourced is the resting,
+ * expected state; `unverified` gets a dashed border because it is a gap.
+ */
+.rs-tag {
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 1px 7px;
+  border-radius: var(--radius);
+  border: 1px solid;
+  white-space: nowrap;
+  cursor: help;
+}
+
+.rs-tag--cited {
+  color: rgb(var(--olive-bright));
+  border-color: rgb(var(--olive) / 0.55);
+  background: rgb(var(--olive) / 0.1);
+}
+
+.rs-tag--reasoned {
+  color: rgb(var(--fg-muted));
+  border-color: rgb(var(--fg-faint) / 0.45);
+  background: rgb(var(--fg-faint) / 0.08);
+}
+
+.rs-tag--unverified {
+  color: rgb(var(--fg-faint));
+  border-style: dashed;
+  border-color: rgb(var(--fg-faint) / 0.5);
+  background: transparent;
+}
+
+/* ── bubble-ups ─────────────────────────────────────────────────────────── */
+
+.rs-bubbles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+}
+
+.rs-bubbles li {
+  padding-left: 12px;
+  border-left: 1px solid rgb(var(--olive) / 0.3);
+}
+
+.rs-bubble__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.rs-bubble__head strong {
+  font-weight: 400;
+  font-size: 13px;
+  color: rgb(var(--fg));
+}
+
+.rs-bubbles p {
+  margin: 5px 0 0;
+  font-size: 12.5px;
+  line-height: 1.7;
+  max-width: 92ch;
+}
+
+.rs-bubble__foot {
+  display: flex;
+  gap: 14px;
+  margin-top: 6px;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.rs-kind {
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 1px 7px;
+  border-radius: var(--radius);
+  border: 1px solid rgb(var(--olive) / 0.45);
+  color: rgb(var(--olive-pale));
+  white-space: nowrap;
+}
+
+/* A gap-note records what could not be sourced — the same dashed idiom. */
+.rs-kind--gap-note {
+  border-style: dashed;
+  border-color: rgb(var(--fg-faint) / 0.5);
+  color: rgb(var(--fg-faint));
+}
+
+.rs-kind--spec-suggestion {
+  border-color: rgb(var(--amber) / 0.5);
+  color: rgb(var(--amber));
+}
+
+.rs-doc {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border: 1px solid rgb(var(--olive) / 0.45);
+  border-radius: var(--radius);
+}
+
+.rs-doc:hover {
+  background: rgb(var(--olive) / 0.12);
+  text-decoration: none;
+}

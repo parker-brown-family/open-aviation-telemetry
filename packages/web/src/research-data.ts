@@ -45,7 +45,16 @@ export interface ResearchGroup {
 
 export interface ResearchBubble {
   kind: string;
-  subjectId: string;
+  /**
+   * Optional, because not every bubble belongs to a subject.
+   *
+   * A serendipity finding or a gap-note is about one subject. A
+   * spec-suggestion is about the RUBRIC — "this definition of done should grow
+   * a field" — and has no subject by definition. Requiring it here made those
+   * two entries unrepresentable, which is the same schema-cannot-express-the-
+   * domain mistake the research itself keeps finding.
+   */
+  subjectId?: string;
   subject: string | null;
   note: string;
   why: string;
