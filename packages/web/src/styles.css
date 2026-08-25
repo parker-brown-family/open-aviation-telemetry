@@ -2108,3 +2108,212 @@ button.small {
 .rs-collapse:hover .rs-collapse__chevron {
   color: rgb(var(--olive-bright));
 }
+
+/* ---------------------------------------------------------------- training */
+
+/*
+ * The training checklist.
+ *
+ * Same idea as the trip checklist on brownfamilysports.com — tap a row, it gets
+ * struck through — with two changes for this console. The strike is olive
+ * instead of red, because red here means an aircraft is in trouble and a
+ * finished course is the opposite of that. And the marker is on the right and
+ * flies: a finished course is a departure, so the aircraft climbs out of the row
+ * rather than an X being stamped on it.
+ */
+
+.tr-list {
+  padding: 0;
+}
+
+.tr-hint {
+  margin: 0;
+  padding: 9px 14px;
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgb(var(--fg-faint));
+  border-bottom: 1px solid rgb(var(--olive) / 0.2);
+}
+
+.tr-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tr-item + .tr-item {
+  border-top: 1px solid rgb(var(--olive) / 0.2);
+}
+
+.tr-item__toggle {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 58px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px 6px;
+  border: 0;
+  border-radius: 0;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  color: rgb(var(--fg));
+  background: transparent;
+}
+
+.tr-item__toggle:hover:not(:disabled) {
+  background: rgb(var(--olive) / 0.08);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.tr-item__toggle:focus-visible {
+  outline: 2px solid rgb(var(--orange) / 0.8);
+  outline-offset: -2px;
+}
+
+.tr-item__ord {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: rgb(var(--fg-faint));
+  font-variant-numeric: tabular-nums;
+}
+
+.tr-item__body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+/*
+ * The strike itself. Thick and olive, sitting across the title rather than
+ * under it — the whole point is that it reads as struck from across the room,
+ * the way a pen through a line on paper does.
+ */
+.tr-item__title {
+  font-size: 13.5px;
+  letter-spacing: 0.03em;
+  line-height: 1.4;
+  text-decoration-line: none;
+}
+
+.is-launched .tr-item__title {
+  color: rgb(var(--fg-faint));
+  text-decoration-line: line-through;
+  text-decoration-color: rgb(var(--olive-bright));
+  text-decoration-thickness: 3px;
+  text-underline-offset: 0;
+}
+
+.tr-item__meta {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.tr-area {
+  padding: 1px 7px;
+  border: 1px solid rgb(var(--olive) / 0.5);
+  border-radius: var(--radius);
+  color: rgb(var(--olive-pale));
+  white-space: nowrap;
+}
+
+/* The two areas no course covers, marked the way the research page marks an
+   unsourced value: dashed, so the gap is visible at a glance. */
+.tr-area--kafka,
+.tr-area--rabbitmq {
+  border-style: dashed;
+  border-color: rgb(var(--amber) / 0.55);
+  color: rgb(var(--amber));
+}
+
+.tr-item__why {
+  padding: 0 14px 13px 60px;
+}
+
+.tr-item__why p {
+  margin: 0 0 5px;
+  font-size: 12px;
+  line-height: 1.65;
+  color: rgb(var(--fg-muted));
+  max-width: 88ch;
+}
+
+.is-launched .tr-item__why p {
+  color: rgb(var(--fg-faint));
+}
+
+.tr-open {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 700px) {
+  .tr-item__why {
+    padding-left: 14px;
+  }
+}
+
+/* ── the departure ──────────────────────────────────────────────────────── */
+
+/*
+ * Unchecked, the aircraft sits on the runway at low contrast — visible enough
+ * that the row reads as "not yet" rather than as having no control at all.
+ * Checked, it rotates into a climb and leaves.
+ */
+.tr-plane {
+  display: inline-flex;
+  justify-self: end;
+  color: rgb(var(--fg-faint) / 0.5);
+  transition: color 200ms ease;
+}
+
+.tr-plane__runway {
+  stroke: currentColor;
+  stroke-width: 1;
+  opacity: 0.6;
+}
+
+.tr-plane__craft {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    transform 420ms cubic-bezier(0.3, 0, 0.2, 1),
+    opacity 420ms ease;
+}
+
+/* Sitting on the runway: level, at the near end, waiting. */
+.tr-item:not(.is-launched) .tr-plane__craft {
+  transform: translate(-1px, 6px) rotate(90deg) scale(0.72);
+}
+
+.tr-item.is-launched .tr-plane {
+  color: rgb(var(--olive-bright));
+}
+
+/* Rotated into the climb and away up the right-hand side. */
+.tr-item.is-launched .tr-plane__craft {
+  transform: translate(26px, -5px) rotate(45deg) scale(0.85);
+}
+
+.tr-item.is-launched .tr-plane__runway {
+  opacity: 0.25;
+}
+
+.tr-item__toggle:hover .tr-plane {
+  color: rgb(var(--olive-pale));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tr-plane__craft {
+    transition: none;
+  }
+}
