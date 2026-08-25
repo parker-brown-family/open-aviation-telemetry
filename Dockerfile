@@ -11,7 +11,7 @@
 # dependency layer.
 
 # ---------------------------------------------------------------- base
-FROM node:22-alpine AS base
+FROM node:26-alpine AS base
 ENV PNPM_HOME=/pnpm
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
@@ -46,7 +46,7 @@ RUN pnpm -r --filter "./packages/shared" --filter "./packages/data" \
 RUN pnpm --filter "${PACKAGE}" deploy --prod --legacy /out
 
 # ---------------------------------------------------------------- runtime
-FROM node:22-alpine AS runtime
+FROM node:26-alpine AS runtime
 ARG PACKAGE
 ENV NODE_ENV=production
 
