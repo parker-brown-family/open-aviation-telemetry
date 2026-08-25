@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import type { AircraftState } from '@oat/shared';
 import { usePoll } from '../api.js';
 import { useDataSource } from '../data-source.js';
-import { PlanView } from '../components/PlanView.js';
+import { FleetView } from '../components/FleetView.js';
 import { useFleetTable } from '../components/useFleetTable.js';
 import { Empty, ErrorNote, Panel, Pill, num, since } from '../components/primitives.js';
 
@@ -154,7 +154,7 @@ export function Fleet(): React.JSX.Element {
           }
           bodyClassName=""
         >
-          <PlanView
+          <FleetView
             aircraft={table.rows}
             alerting={alerting}
             selectedId={selectedId}

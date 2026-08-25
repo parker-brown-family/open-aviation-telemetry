@@ -13,12 +13,15 @@ import { placeDataBlocks, tiePoint } from './dataBlocks.js';
 /**
  * A plan-view scope over the demo region.
  *
- * Deliberately not a slippy map. A tile provider is a third-party runtime
- * dependency, an API key to manage and a network request that can fail during a
- * demonstration — for a fixed region where the only thing that moves is the
- * aircraft. An equirectangular projection into an SVG viewBox needs none of
- * that, renders identically offline, and reads like the instrument it is
- * imitating.
+ * One of two fleet displays. This is the SCOPE: no tiles, no network, no
+ * third-party anything. An equirectangular projection into an SVG viewBox over a
+ * fixed region, which renders identically offline and reads like the instrument
+ * it is imitating.
+ *
+ * The other is TacticalMap, which puts the same fleet over a real terrain
+ * basemap. That is the better picture and it is the default; this is what the
+ * application falls back to when the tiles do not load, so a demonstration never
+ * depends on a CDN being reachable. See ADR-0011.
  *
  * What makes it readable rather than just a scatter of dots is borrowed from
  * air-traffic displays:

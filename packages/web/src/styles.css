@@ -16,7 +16,7 @@
  *
  *   2. The font is self-hosted rather than imported from Google Fonts. A blocking
  *      @import to a third-party host is a network dependency during a live
- *      demonstration — the same reason the map draws no tiles.
+ *      demonstration — the same reason the scope view draws no tiles.
  */
 
 @font-face {
@@ -1153,4 +1153,312 @@ button.small {
   * {
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ---------------------------------------------------------------- tactical map */
+
+/*
+ * The Leaflet map, dressed to match the scope.
+ *
+ * Leaflet ships its own light-themed chrome, so most of what follows is
+ * overriding that rather than inventing anything: the zoom control, the
+ * attribution strip and the tile container all default to white boxes that look
+ * pasted on over an olive HUD.
+ */
+
+.tm {
+  position: relative;
+}
+
+.tm-canvas {
+  height: 520px;
+  width: 100%;
+  background: #12140e;
+}
+
+@media (max-width: 1100px) {
+  .tm-canvas {
+    height: 400px;
+  }
+}
+
+/* Cool the basemap toward the theme so the fleet stays the brightest thing. */
+.tm-canvas .leaflet-tile-pane {
+  filter: saturate(0.55) hue-rotate(-12deg) brightness(0.92);
+}
+
+.tm-canvas .leaflet-container {
+  background: #12140e;
+  font-family: var(--mono);
+}
+
+.tm-canvas .leaflet-control-zoom a {
+  background: rgb(var(--bg-2) / 0.9);
+  border: 1px solid rgb(var(--olive) / 0.5);
+  color: rgb(var(--olive-pale));
+  font-family: var(--mono);
+}
+
+.tm-canvas .leaflet-control-zoom a:hover {
+  background: rgb(var(--olive) / 0.2);
+  color: rgb(var(--orange));
+}
+
+.tm-canvas .leaflet-control-attribution {
+  background: rgb(var(--bg) / 0.75);
+  color: rgb(var(--fg-faint));
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+}
+
+.tm-canvas .leaflet-control-attribution a {
+  color: rgb(var(--olive-pale));
+}
+
+/* ── aircraft glyphs ──────────────────────────────────────────────────── */
+
+.tm-aircraft-icon {
+  background: none;
+  border: none;
+}
+
+.tm-glyph {
+  display: block;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  /* Rotation is set inline per aircraft; transition it so a heading change
+     turns the glyph rather than snapping it. */
+  transition: transform 400ms ease-out;
+  transform-origin: 50% 50%;
+}
+
+.tm-glyph svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.tm-glyph polygon {
+  fill: var(--glyph, rgb(var(--olive-bright)));
+  stroke: rgb(0 0 0 / 0.55);
+  stroke-width: 0.12;
+  paint-order: stroke fill;
+}
+
+.tm-glyph:hover polygon {
+  fill: rgb(var(--orange-bright));
+}
+
+.tm-glyph.is-selected polygon {
+  fill: rgb(var(--orange));
+  stroke: rgb(var(--orange-bright));
+  stroke-width: 0.3;
+}
+
+/* A ring around the selected target, drawn on the glyph's own box. */
+.tm-glyph.is-selected::after {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border: 1.5px solid rgb(var(--orange) / 0.85);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.tm-glyph.is-alerting polygon {
+  fill: rgb(var(--red));
+}
+
+.tm-glyph.is-alerting::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border: 1.5px solid rgb(var(--red) / 0.7);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: pulse 1.6s ease-out infinite;
+}
+
+/* Same UA focus-ring problem as the scope glyphs — Leaflet markers are
+   keyboard-focusable anchors, and the default ring is white on this basemap. */
+.tm-canvas .leaflet-marker-icon:focus {
+  outline: none;
+}
+
+.tm-canvas .leaflet-marker-icon:focus-visible {
+  outline: 2px solid rgb(var(--orange));
+  outline-offset: 3px;
+}
+
+/* ── airports ─────────────────────────────────────────────────────────── */
+
+.tm-airport-icon {
+  background: none;
+  border: none;
+}
+
+.tm-airport {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transform: translate(-4px, -4px);
+  white-space: nowrap;
+}
+
+.tm-airport i {
+  width: 7px;
+  height: 7px;
+  border: 1px solid rgb(var(--olive-pale) / 0.7);
+  border-radius: 50%;
+  background: rgb(var(--olive-pale) / 0.35);
+  flex: none;
+}
+
+.tm-airport b {
+  font-weight: 400;
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  color: rgb(var(--olive-pale) / 0.75);
+  text-shadow: 0 0 4px rgb(0 0 0 / 0.9);
+}
+
+.tm-airport--major i {
+  width: 9px;
+  height: 9px;
+  border-color: rgb(var(--olive-pale));
+}
+
+.tm-airport--major b {
+  font-size: 11px;
+  color: rgb(var(--olive-pale));
+}
+
+/* ── track ────────────────────────────────────────────────────────────── */
+
+.tm-trail {
+  stroke: rgb(var(--orange) / 0.8);
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── the hover card ───────────────────────────────────────────────────── */
+
+/*
+ * Modelled on the site's existing tactical card: tracked-out kicker, strong
+ * title, a rule, then the data. Positioned over the map rather than as a
+ * Leaflet popup so it is styled by this stylesheet and never moves the map.
+ */
+.tm-card {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 500;
+  min-width: 230px;
+  padding: 10px 13px 11px;
+  background: rgb(var(--bg) / 0.93);
+  border: 1.5px solid rgb(var(--orange) / 0.65);
+  box-shadow:
+    0 0 24px rgb(0 0 0 / 0.6),
+    inset 0 0 20px rgb(var(--olive) / 0.07);
+  backdrop-filter: blur(6px);
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+  pointer-events: none;
+}
+
+.tm-card__kicker {
+  font-size: 9.5px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgb(var(--orange));
+}
+
+.tm-card__title {
+  font-size: 17px;
+  letter-spacing: 0.06em;
+  color: rgb(var(--fg));
+  margin-top: 3px;
+}
+
+.tm-card__sub {
+  font-size: 11px;
+  color: rgb(var(--fg-faint));
+  letter-spacing: 0.06em;
+  padding-bottom: 7px;
+  border-bottom: 1px solid rgb(var(--olive) / 0.35);
+}
+
+.tm-card__grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1px 12px;
+  margin: 8px 0 0;
+  font-size: 11.5px;
+}
+
+.tm-card__grid dt {
+  color: rgb(var(--fg-faint));
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 9.5px;
+  align-self: center;
+}
+
+.tm-card__grid dd {
+  margin: 0;
+  color: rgb(var(--fg));
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── view switch + altitude legend ────────────────────────────────────── */
+
+.view-switch {
+  display: inline-flex;
+  border: 1px solid rgb(var(--olive) / 0.5);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.view-switch button {
+  border: none;
+  border-radius: 0;
+  padding: 4px 11px;
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+}
+
+.view-switch button + button {
+  border-left: 1px solid rgb(var(--olive) / 0.5);
+}
+
+.view-switch button[aria-pressed='true'] {
+  background: rgb(var(--orange) / 0.9);
+  color: rgb(20 18 10);
+}
+
+.alt-legend {
+  display: flex;
+  gap: 13px;
+  flex-wrap: wrap;
+  padding: 7px 12px;
+  border-top: 1px solid rgb(var(--olive) / 0.25);
+  background: rgb(var(--bg) / 0.5);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(var(--fg-faint));
+}
+
+.alt-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.alt-legend i {
+  width: 8px;
+  height: 8px;
+  display: inline-block;
 }

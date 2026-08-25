@@ -36,9 +36,11 @@ depth, critical alerts, API p95.
 > "Every number on this page is measured. The lag figure is read from Kafka's
 > admin API, the queue depth from RabbitMQ. Nothing here is a display value."
 
-The plan view is not a map with tiles — it is an equirectangular projection into
-an SVG. Worth a sentence if asked: no third-party tile provider means nothing to
-fail during a demonstration.
+There are two views, and the switch is worth a sentence. **Map** puts the fleet
+over real terrain from third-party tiles — the better picture. **Scope** is a
+self-contained SVG projection with no network dependency at all. The map falls
+back to the scope on its own if the tiles do not load, so nothing here depends on
+a CDN being reachable in the room.
 
 ## 3 — The architecture explorer (1–2 minutes)
 
