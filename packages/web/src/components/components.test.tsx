@@ -64,7 +64,7 @@ describe('Pill', () => {
 
 describe('StatTile', () => {
   it('shows label, value and note', () => {
-    render(<StatTile label="Active aircraft" value="42" note="3 stale" tone="cyan" />);
+    render(<StatTile label="Active aircraft" value="42" note="3 stale" tone="olive" />);
     expect(screen.getByText('Active aircraft')).toBeInTheDocument();
     expect(screen.getByText('42')).toBeInTheDocument();
     expect(screen.getByText('3 stale')).toBeInTheDocument();
@@ -114,38 +114,53 @@ function aircraft(overrides: Partial<AircraftState> = {}): AircraftState {
   };
 }
 
+/** Builds N distinct aircraft, so density-dependent behaviour can be exercised. */
+function fleet(count: number): AircraftState[] {
+  return Array.from({ length: count }, (_, i) =>
+    aircraft({
+      aircraft_id: `C-G${String(i).padStart(3, '0')}`,
+      callsign: `OKA${100 + i}`,
+      latest: {
+        ...aircraft().latest!,
+        aircraft_id: `C-G${String(i).padStart(3, '0')}`,
+        position: { latitude: 49 + i * 0.1, longitude: -120 + i * 0.1 },
+      },
+    }),
+  );
+}
+
 describe('PlanView', () => {
   it('renders one glyph per aircraft that has telemetry', () => {
     const { container } = render(
       <PlanView aircraft={[aircraft(), aircraft({ aircraft_id: 'C-GXYZ', callsign: 'CAS102' })]} />,
     );
-    expect(container.querySelectorAll('.planview__aircraft')).toHaveLength(2);
+    expect(container.querySelectorAll('.pv-aircraft')).toHaveLength(2);
   });
 
   it('skips an aircraft with no telemetry rather than drawing it at the origin', () => {
     const { container } = render(<PlanView aircraft={[aircraft({ latest: null })]} />);
-    expect(container.querySelectorAll('.planview__aircraft')).toHaveLength(0);
+    expect(container.querySelectorAll('.pv-aircraft')).toHaveLength(0);
   });
 
   it('marks an alerting aircraft distinctly', () => {
     const { container } = render(
       <PlanView aircraft={[aircraft()]} alerting={new Set(['C-GABC'])} />,
     );
-    expect(container.querySelector('.planview__aircraft--alert')).toBeInTheDocument();
+    expect(container.querySelector('.pv-aircraft--alert')).toBeInTheDocument();
   });
 
-  it('rotates the glyph to the reported heading, so direction is readable', () => {
+  it('rotates the glyph to the reported track, so direction is readable', () => {
     const { container } = render(
       <PlanView aircraft={[aircraft({ latest: { ...aircraft().latest!, heading_deg: 137 } })]} />,
     );
-    const glyph = container.querySelector('.planview__aircraft');
+    const glyph = container.querySelector('.pv-aircraft');
     expect(glyph?.getAttribute('transform')).toContain('rotate(137)');
   });
 
   it('reports the selected aircraft when a glyph is clicked', async () => {
     const onSelect = vi.fn();
     const { container } = render(<PlanView aircraft={[aircraft()]} onSelect={onSelect} />);
-    const glyph = container.querySelector('.planview__aircraft');
+    const glyph = container.querySelector('.pv-aircraft');
     expect(glyph).not.toBeNull();
     await userEvent.click(glyph!);
     expect(onSelect).toHaveBeenCalledWith('C-GABC');
@@ -153,25 +168,111 @@ describe('PlanView', () => {
 
   it('draws every reference airport so the scope has fixed points', () => {
     const { container } = render(<PlanView aircraft={[]} />);
-    expect(container.querySelectorAll('.planview__airport').length).toBeGreaterThan(8);
+    expect(container.querySelectorAll('.pv-airport-dot').length).toBeGreaterThan(8);
   });
 
-  it('places Kelowna inside the drawn area', () => {
+  it('draws range rings from the datum', () => {
     const { container } = render(<PlanView aircraft={[]} />);
-    const labels = Array.from(container.querySelectorAll('.planview__airport-label'));
-    const ylw = labels.find((l) => l.textContent === 'YLW');
-    expect(ylw).toBeDefined();
-    const x = Number(ylw?.getAttribute('x') ?? -1);
-    const y = Number(ylw?.getAttribute('y') ?? -1);
-    expect(x).toBeGreaterThan(0);
-    expect(x).toBeLessThan(100);
-    expect(y).toBeGreaterThan(0);
-    expect(y).toBeLessThan(62);
+    // Three rings, each an ellipse because the projection is equirectangular.
+    expect(container.querySelectorAll('.pv-range-ring')).toHaveLength(3);
+  });
+
+  it('draws a compass rose with the four cardinals', () => {
+    const { container } = render(<PlanView aircraft={[]} />);
+    const labels = Array.from(container.querySelectorAll('.pv-compass-label')).map(
+      (n) => n.textContent,
+    );
+    expect(labels).toEqual(['N', 'E', 'S', 'W']);
+  });
+
+  describe('the velocity leader', () => {
+    it('is drawn for a moving aircraft', () => {
+      const { container } = render(<PlanView aircraft={[aircraft()]} />);
+      expect(container.querySelector('.pv-leader')).toBeInTheDocument();
+    });
+
+    it('is omitted for a stationary aircraft rather than drawn as a zero-length line', () => {
+      const { container } = render(
+        <PlanView
+          aircraft={[aircraft({ latest: { ...aircraft().latest!, groundspeed_kts: 0 } })]}
+        />,
+      );
+      expect(container.querySelector('.pv-leader')).toBeNull();
+    });
+
+    it('is longer for a faster aircraft, so speed is readable without a number', () => {
+      const lengthOf = (kts: number): number => {
+        const { container, unmount } = render(
+          <PlanView
+            aircraft={[aircraft({ latest: { ...aircraft().latest!, groundspeed_kts: kts } })]}
+          />,
+        );
+        const line = container.querySelector('.pv-leader')!;
+        const dx = Number(line.getAttribute('x2')) - Number(line.getAttribute('x1'));
+        const dy = Number(line.getAttribute('y2')) - Number(line.getAttribute('y1'));
+        const len = Math.hypot(dx, dy);
+        unmount();
+        return len;
+      };
+
+      expect(lengthOf(400)).toBeGreaterThan(lengthOf(150));
+    });
+  });
+
+  describe('data blocks', () => {
+    it('shows a block for every aircraft while the fleet is small', () => {
+      const { container } = render(<PlanView aircraft={fleet(6)} />);
+      expect(container.querySelectorAll('.pv-block')).toHaveLength(6);
+    });
+
+    it('shows blocks only for selected and alerting targets once the fleet is dense', () => {
+      // A hundred blocks on one screen is worse than none, so above the density
+      // threshold the display becomes selective.
+      const many = fleet(40);
+      const { container } = render(
+        <PlanView
+          aircraft={many}
+          selectedId={many[0]!.aircraft_id}
+          alerting={new Set([many[1]!.aircraft_id])}
+        />,
+      );
+      expect(container.querySelectorAll('.pv-block')).toHaveLength(2);
+    });
+
+    it('renders altitude in hundreds of feet and groundspeed in tens of knots', () => {
+      const { container } = render(<PlanView aircraft={[aircraft()]} />);
+      const lines = Array.from(container.querySelectorAll('.pv-block-text')).map(
+        (n) => n.textContent,
+      );
+      // 24,000 ft -> 240; 360 kt -> 36
+      expect(lines).toContain('240 36');
+    });
+
+    it('pads the compact fields so the block stays a fixed width', () => {
+      const { container } = render(
+        <PlanView
+          aircraft={[
+            aircraft({
+              latest: { ...aircraft().latest!, altitude_ft: 500, groundspeed_kts: 90 },
+            }),
+          ]}
+        />,
+      );
+      const lines = Array.from(container.querySelectorAll('.pv-block-text')).map(
+        (n) => n.textContent,
+      );
+      expect(lines).toContain('005 09');
+    });
+  });
+
+  it('draws a reticle around the selected aircraft', () => {
+    const { container } = render(<PlanView aircraft={[aircraft()]} selectedId="C-GABC" />);
+    expect(container.querySelector('.pv-reticle')).toBeInTheDocument();
   });
 
   it('draws a trail only when there is more than one sample', () => {
     const single = render(<PlanView aircraft={[aircraft()]} trail={[aircraft().latest!]} />);
-    expect(single.container.querySelector('.planview__trail')).toBeNull();
+    expect(single.container.querySelector('.pv-trail')).toBeNull();
     single.unmount();
 
     const multi = render(
@@ -183,12 +284,24 @@ describe('PlanView', () => {
         ]}
       />,
     );
-    expect(multi.container.querySelector('.planview__trail')).toBeInTheDocument();
+    expect(multi.container.querySelector('.pv-trail')).toBeInTheDocument();
   });
 
   it('describes itself for screen readers', () => {
     render(<PlanView aircraft={[aircraft()]} />);
     expect(screen.getByRole('img')).toHaveAccessibleName(/1 aircraft/);
+  });
+
+  it('gives each target an accessible label with its altitude and speed', () => {
+    render(<PlanView aircraft={[aircraft()]} />);
+    expect(
+      screen.getByRole('button', { name: /OKA101, 24000 feet, 360 knots/ }),
+    ).toBeInTheDocument();
+  });
+
+  it('can hide the legend when the surrounding panel already explains the view', () => {
+    const { container } = render(<PlanView aircraft={[]} showLegend={false} />);
+    expect(container.querySelector('.planview__legend')).toBeNull();
   });
 
   it('uses the shared region definition, not its own copy', () => {

@@ -61,7 +61,7 @@ export function DemoConsole(): React.JSX.Element {
         <StatTile
           label="Simulation"
           value={state?.running ? 'RUNNING' : 'STOPPED'}
-          tone={state?.running ? 'green' : 'default'}
+          tone={state?.running ? 'olive' : 'default'}
           note={state?.started_at ? `since ${new Date(state.started_at).toLocaleTimeString()}` : ''}
         />
         <StatTile

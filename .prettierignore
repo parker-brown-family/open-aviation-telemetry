@@ -8,3 +8,6 @@ cdk.out
 charts/**/templates
 dist-static
 cdk.out
+
+docs/research/*.html
+docs/research/*.csv

@@ -1,0 +1,1381 @@
+{
+  "done": true,
+  "stopReason": "done",
+  "rounds": [
+    {
+      "round": 1,
+      "pendingBefore": 21,
+      "gapsTargeted": 168,
+      "fieldsFilled": 168,
+      "tokens": 41000,
+      "meanScoreAfter": 1,
+      "completeAfter": 21
+    }
+  ],
+  "totalTokens": 41000,
+  "score": {
+    "scores": [
+      {
+        "id": "antimeridian-crossing",
+        "label": "Longitude wrap at the antimeridian",
+        "group": "Position & navigation",
+        "fields": [
+          {
+            "key": "what",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "real_encoding",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "realistic_example",
+            "requirement": "required",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "difficult_case",
+            "requirement": "required",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "why_naive_breaks",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "robust_handling",
+            "requirement": "preferred",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "standard",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "observability",
+            "requirement": "preferred",
+            "status": "unverified",
+            "satisfied": true
+          }
+        ],
+        "requiredTotal": 5,
+        "requiredMet": 5,
+        "preferredTotal": 3,
+        "preferredMet": 3,
+        "score": 1,
+        "complete": true,
+        "gaps": []
+      },
+      {
+        "id": "polar-navigation",
+        "label": "High-latitude flight — true vs magnetic heading, meridian convergence",
+        "group": "Position & navigation",
+        "fields": [
+          {
+            "key": "what",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "real_encoding",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "realistic_example",
+            "requirement": "required",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "difficult_case",
+            "requirement": "required",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "why_naive_breaks",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "robust_handling",
+            "requirement": "preferred",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "standard",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "observability",
+            "requirement": "preferred",
+            "status": "unverified",
+            "satisfied": true
+          }
+        ],
+        "requiredTotal": 5,
+        "requiredMet": 5,
+        "preferredTotal": 3,
+        "preferredMet": 3,
+        "score": 1,
+        "complete": true,
+        "gaps": []
+      },
+      {
+        "id": "adsb-position-integrity",
+        "label": "Position integrity categories (NIC / NACp / SIL)",
+        "group": "Position & navigation",
+        "fields": [
+          {
+            "key": "what",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "real_encoding",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "realistic_example",
+            "requirement": "required",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "difficult_case",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "why_naive_breaks",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "robust_handling",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "standard",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "observability",
+            "requirement": "preferred",
+            "status": "unverified",
+            "satisfied": true
+          }
+        ],
+        "requiredTotal": 5,
+        "requiredMet": 5,
+        "preferredTotal": 3,
+        "preferredMet": 3,
+        "score": 1,
+        "complete": true,
+        "gaps": []
+      },
+      {
+        "id": "gnss-outage-coasting",
+        "label": "GNSS outage — coasting, dead reckoning and stale position",
+        "group": "Position & navigation",
+        "fields": [
+          {
+            "key": "what",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "real_encoding",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "realistic_example",
+            "requirement": "required",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "difficult_case",
+            "requirement": "required",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "why_naive_breaks",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "robust_handling",
+            "requirement": "preferred",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "standard",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "observability",
+            "requirement": "preferred",
+            "status": "unverified",
+            "satisfied": true
+          }
+        ],
+        "requiredTotal": 5,
+        "requiredMet": 5,
+        "preferredTotal": 3,
+        "preferredMet": 3,
+        "score": 1,
+        "complete": true,
+        "gaps": []
+      },
+      {
+        "id": "barometric-vs-geometric-altitude",
+        "label": "Barometric vs geometric altitude, QNH and the transition altitude",
+        "group": "Altitude & vertical",
+        "fields": [
+          {
+            "key": "what",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "real_encoding",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "realistic_example",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "difficult_case",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "why_naive_breaks",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "robust_handling",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "standard",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "observability",
+            "requirement": "preferred",
+            "status": "unverified",
+            "satisfied": true
+          }
+        ],
+        "requiredTotal": 5,
+        "requiredMet": 5,
+        "preferredTotal": 3,
+        "preferredMet": 3,
+        "score": 1,
+        "complete": true,
+        "gaps": []
+      },
+      {
+        "id": "vertical-rate-sources",
+        "label": "Vertical rate — barometric vs geometric source, and its noise",
+        "group": "Altitude & vertical",
+        "fields": [
+          {
+            "key": "what",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "real_encoding",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "realistic_example",
+            "requirement": "required",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "difficult_case",
+            "requirement": "required",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "why_naive_breaks",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "robust_handling",
+            "requirement": "preferred",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "standard",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "observability",
+            "requirement": "preferred",
+            "status": "unverified",
+            "satisfied": true
+          }
+        ],
+        "requiredTotal": 5,
+        "requiredMet": 5,
+        "preferredTotal": 3,
+        "preferredMet": 3,
+        "score": 1,
+        "complete": true,
+        "gaps": []
+      },
+      {
+        "id": "aircraft-identifiers",
+        "label": "ICAO 24-bit address vs registration vs callsign vs flight number",
+        "group": "Identity & addressing",
+        "fields": [
+          {
+            "key": "what",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "real_encoding",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "realistic_example",
+            "requirement": "required",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "difficult_case",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "why_naive_breaks",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "robust_handling",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "standard",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "observability",
+            "requirement": "preferred",
+            "status": "unverified",
+            "satisfied": true
+          }
+        ],
+        "requiredTotal": 5,
+        "requiredMet": 5,
+        "preferredTotal": 3,
+        "preferredMet": 3,
+        "score": 1,
+        "complete": true,
+        "gaps": []
+      },
+      {
+        "id": "callsign-reuse-and-change",
+        "label": "Callsign reuse, in-flight change and the same tail flying two flights a day",
+        "group": "Identity & addressing",
+        "fields": [
+          {
+            "key": "what",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "real_encoding",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "realistic_example",
+            "requirement": "required",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "difficult_case",
+            "requirement": "required",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "why_naive_breaks",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "robust_handling",
+            "requirement": "preferred",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "standard",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "observability",
+            "requirement": "preferred",
+            "status": "unverified",
+            "satisfied": true
+          }
+        ],
+        "requiredTotal": 5,
+        "requiredMet": 5,
+        "preferredTotal": 3,
+        "preferredMet": 3,
+        "score": 1,
+        "complete": true,
+        "gaps": []
+      },
+      {
+        "id": "report-time-vs-receipt-time",
+        "label": "Time of applicability vs time of receipt in a store-and-forward link",
+        "group": "Time, ordering & latency",
+        "fields": [
+          {
+            "key": "what",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "real_encoding",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "realistic_example",
+            "requirement": "required",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "difficult_case",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "why_naive_breaks",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "robust_handling",
+            "requirement": "preferred",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "standard",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "observability",
+            "requirement": "preferred",
+            "status": "unverified",
+            "satisfied": true
+          }
+        ],
+        "requiredTotal": 5,
+        "requiredMet": 5,
+        "preferredTotal": 3,
+        "preferredMet": 3,
+        "score": 1,
+        "complete": true,
+        "gaps": []
+      },
+      {
+        "id": "gps-time-utc-rollover",
+        "label": "GPS time, leap seconds and week-number rollover",
+        "group": "Time, ordering & latency",
+        "fields": [
+          {
+            "key": "what",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "real_encoding",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "realistic_example",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "difficult_case",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "why_naive_breaks",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "robust_handling",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "standard",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "observability",
+            "requirement": "preferred",
+            "status": "unverified",
+            "satisfied": true
+          }
+        ],
+        "requiredTotal": 5,
+        "requiredMet": 5,
+        "preferredTotal": 3,
+        "preferredMet": 3,
+        "score": 1,
+        "complete": true,
+        "gaps": []
+      },
+      {
+        "id": "iridium-sbd-constraints",
+        "label": "Iridium Short Burst Data — message size, latency and cost per report",
+        "group": "Link & transport",
+        "fields": [
+          {
+            "key": "what",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "real_encoding",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "realistic_example",
+            "requirement": "required",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "difficult_case",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "why_naive_breaks",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "robust_handling",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "standard",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "observability",
+            "requirement": "preferred",
+            "status": "unverified",
+            "satisfied": true
+          }
+        ],
+        "requiredTotal": 5,
+        "requiredMet": 5,
+        "preferredTotal": 3,
+        "preferredMet": 3,
+        "score": 1,
+        "complete": true,
+        "gaps": []
+      },
+      {
+        "id": "acars-message-structure",
+        "label": "ACARS / ARINC 618 message structure and character-set limits",
+        "group": "Link & transport",
+        "fields": [
+          {
+            "key": "what",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "real_encoding",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "realistic_example",
+            "requirement": "required",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "difficult_case",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "why_naive_breaks",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "robust_handling",
+            "requirement": "preferred",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "standard",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "observability",
+            "requirement": "preferred",
+            "status": "unverified",
+            "satisfied": true
+          }
+        ],
+        "requiredTotal": 5,
+        "requiredMet": 5,
+        "preferredTotal": 3,
+        "preferredMet": 3,
+        "score": 1,
+        "complete": true,
+        "gaps": []
+      },
+      {
+        "id": "reporting-rate-triggers",
+        "label": "What triggers a position report — periodic, event, and rate escalation",
+        "group": "Link & transport",
+        "fields": [
+          {
+            "key": "what",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "real_encoding",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "realistic_example",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "difficult_case",
+            "requirement": "required",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "why_naive_breaks",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "robust_handling",
+            "requirement": "preferred",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "standard",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "observability",
+            "requirement": "preferred",
+            "status": "unverified",
+            "satisfied": true
+          }
+        ],
+        "requiredTotal": 5,
+        "requiredMet": 5,
+        "preferredTotal": 3,
+        "preferredMet": 3,
+        "score": 1,
+        "complete": true,
+        "gaps": []
+      },
+      {
+        "id": "gadss-adt-requirements",
+        "label": "GADSS autonomous distress tracking — the 1-minute rule",
+        "group": "Link & transport",
+        "fields": [
+          {
+            "key": "what",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "real_encoding",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "realistic_example",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "difficult_case",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "why_naive_breaks",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "robust_handling",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "standard",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "observability",
+            "requirement": "preferred",
+            "status": "unverified",
+            "satisfied": true
+          }
+        ],
+        "requiredTotal": 5,
+        "requiredMet": 5,
+        "preferredTotal": 3,
+        "preferredMet": 3,
+        "score": 1,
+        "complete": true,
+        "gaps": []
+      },
+      {
+        "id": "turbine-engine-parameters",
+        "label": "Turbine engine parameters — N1, N2, ITT/EGT, torque (there is no 'rpm')",
+        "group": "Aircraft & engine parameters",
+        "fields": [
+          {
+            "key": "what",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "real_encoding",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "realistic_example",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "difficult_case",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "why_naive_breaks",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "robust_handling",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "standard",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "observability",
+            "requirement": "preferred",
+            "status": "unverified",
+            "satisfied": true
+          }
+        ],
+        "requiredTotal": 5,
+        "requiredMet": 5,
+        "preferredTotal": 3,
+        "preferredMet": 3,
+        "score": 1,
+        "complete": true,
+        "gaps": []
+      },
+      {
+        "id": "arinc429-encoding",
+        "label": "ARINC 429 word encoding — label, SSM, BNR/BCD and resolution",
+        "group": "Aircraft & engine parameters",
+        "fields": [
+          {
+            "key": "what",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "real_encoding",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "realistic_example",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "difficult_case",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "why_naive_breaks",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "robust_handling",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "standard",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "observability",
+            "requirement": "preferred",
+            "status": "unverified",
+            "satisfied": true
+          }
+        ],
+        "requiredTotal": 5,
+        "requiredMet": 5,
+        "preferredTotal": 3,
+        "preferredMet": 3,
+        "score": 1,
+        "complete": true,
+        "gaps": []
+      },
+      {
+        "id": "fdm-exceedance-events",
+        "label": "FDM/FOQA exceedance detection — how real thresholds are defined",
+        "group": "Aircraft & engine parameters",
+        "fields": [
+          {
+            "key": "what",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "real_encoding",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "realistic_example",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "difficult_case",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "why_naive_breaks",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "robust_handling",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "standard",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "observability",
+            "requirement": "preferred",
+            "status": "unverified",
+            "satisfied": true
+          }
+        ],
+        "requiredTotal": 5,
+        "requiredMet": 5,
+        "preferredTotal": 3,
+        "preferredMet": 3,
+        "score": 1,
+        "complete": true,
+        "gaps": []
+      },
+      {
+        "id": "emergency-squawks",
+        "label": "Emergency squawk codes 7500 / 7600 / 7700 and emergency status bits",
+        "group": "Operational & emergency states",
+        "fields": [
+          {
+            "key": "what",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "real_encoding",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "realistic_example",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "difficult_case",
+            "requirement": "required",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "why_naive_breaks",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "robust_handling",
+            "requirement": "preferred",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "standard",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "observability",
+            "requirement": "preferred",
+            "status": "unverified",
+            "satisfied": true
+          }
+        ],
+        "requiredTotal": 5,
+        "requiredMet": 5,
+        "preferredTotal": 3,
+        "preferredMet": 3,
+        "score": 1,
+        "complete": true,
+        "gaps": []
+      },
+      {
+        "id": "flight-phase-determination",
+        "label": "Flight phase — weight-on-wheels, air/ground logic and why altitude is not enough",
+        "group": "Operational & emergency states",
+        "fields": [
+          {
+            "key": "what",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "real_encoding",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "realistic_example",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "difficult_case",
+            "requirement": "required",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "why_naive_breaks",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "robust_handling",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "standard",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "observability",
+            "requirement": "preferred",
+            "status": "unverified",
+            "satisfied": true
+          }
+        ],
+        "requiredTotal": 5,
+        "requiredMet": 5,
+        "preferredTotal": 3,
+        "preferredMet": 3,
+        "score": 1,
+        "complete": true,
+        "gaps": []
+      },
+      {
+        "id": "multi-receiver-duplicates",
+        "label": "The same report arriving from several receivers or links",
+        "group": "Data quality & integrity",
+        "fields": [
+          {
+            "key": "what",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "real_encoding",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "realistic_example",
+            "requirement": "required",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "difficult_case",
+            "requirement": "required",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "why_naive_breaks",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "robust_handling",
+            "requirement": "preferred",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "standard",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "observability",
+            "requirement": "preferred",
+            "status": "unverified",
+            "satisfied": true
+          }
+        ],
+        "requiredTotal": 5,
+        "requiredMet": 5,
+        "preferredTotal": 3,
+        "preferredMet": 3,
+        "score": 1,
+        "complete": true,
+        "gaps": []
+      },
+      {
+        "id": "unit-ambiguity",
+        "label": "Unit ambiguity — knots, km/h, feet, metres, flight levels",
+        "group": "Data quality & integrity",
+        "fields": [
+          {
+            "key": "what",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "real_encoding",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "realistic_example",
+            "requirement": "required",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "difficult_case",
+            "requirement": "required",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "why_naive_breaks",
+            "requirement": "required",
+            "status": "unverified",
+            "satisfied": true
+          },
+          {
+            "key": "robust_handling",
+            "requirement": "preferred",
+            "status": "flagged",
+            "satisfied": true
+          },
+          {
+            "key": "standard",
+            "requirement": "preferred",
+            "status": "verified",
+            "satisfied": true
+          },
+          {
+            "key": "observability",
+            "requirement": "preferred",
+            "status": "unverified",
+            "satisfied": true
+          }
+        ],
+        "requiredTotal": 5,
+        "requiredMet": 5,
+        "preferredTotal": 3,
+        "preferredMet": 3,
+        "score": 1,
+        "complete": true,
+        "gaps": []
+      }
+    ],
+    "completeCount": 21,
+    "total": 21,
+    "done": true,
+    "pending": [],
+    "meanScore": 1
+  },
+  "bubbles": [
+    {
+      "kind": "serendipity",
+      "subjectId": "gadss-adt-requirements",
+      "note": "The GADSS one-minute distress-tracking date has moved twice and most secondary sources still print the original 2021 figure.",
+      "why": "Anything quoting 2021 is repeating superseded trade-press coverage. As adopted the requirement applies from 1 January 2025 to aeroplanes over 27,000 kg whose certificate of airworthiness was first issued on or after 1 January 2024. This is a live example of a regulatory citation that decays, and an argument for recording a retrieval date on every regulatory claim.",
+      "source": "https://aviationweek.com/mro/icao-postpones-distress-tracking-mandate"
+    },
+    {
+      "kind": "serendipity",
+      "subjectId": "turbine-engine-parameters",
+      "note": "Gas generator speed is reported as a percentage of a reference speed, and 100% is about 37,500 rpm on a PT6A-27.",
+      "why": "This is the single highest-value finding of the run for open-aviation-telemetry. The existing schema has engine.rpm with a 0-6000 range and an 1800-2700 airborne band. For a turbine that is not a units error — the modelled quantity does not exist, the real shaft speed is an order of magnitude outside the declared range, and the operationally limiting parameter (ITT) has no field. It is a schema change, not a constant change.",
+      "source": "https://www.aviationpros.com/engines-components/article/10387616/troubleshooting-taking-a-look-at-the-pt6a27-engine"
+    },
+    {
+      "kind": "serendipity",
+      "subjectId": "adsb-position-integrity",
+      "note": "Fleet-wide NACp degradation is a GNSS interference detector, not a fleet of broken transponders.",
+      "why": "A tracking platform that stores the integrity categories gets regional GNSS interference monitoring for free — a genuinely useful product feature that falls out of not discarding fields. A platform that stores only latitude and longitude cannot ever add it retrospectively, because the data was never kept.",
+      "source": "https://insidegnss.com/protecting-gnss-for-safe-aviation/"
+    },
+    {
+      "kind": "serendipity",
+      "subjectId": "iridium-sbd-constraints",
+      "note": "SBD latency scales with message length: about 5 s at 70 bytes versus about 20 s at the 340-byte maximum.",
+      "why": "Message size is not only a cost lever, it is a latency lever. That inverts the usual instinct to batch: for a tracking application, several small reports arrive sooner than one large one, which matters directly for how quickly a position is known.",
+      "source": "https://metocean.com/wp-content/uploads/2020/06/DEV_Iridium-SBD_Best-Practices-Guide_NOV17.pdf"
+    },
+    {
+      "kind": "gap-note",
+      "subjectId": "polar-navigation",
+      "note": "Specific ARINC 429 label numbers for magnetic versus true heading were not obtainable from public sources.",
+      "why": "ARINC 429 Part 1 is paywalled and public summaries document the word structure without reproducing the full label table. The structural claim — that units, resolution and range are fixed per label, so magnetic and true heading are distinct labels — is sourced; the specific label numbers are not and were therefore not asserted.",
+      "source": "https://www.aim-online.com/wp-content/uploads/2019/07/aim-tutorial-oview429-190712-u.pdf"
+    },
+    {
+      "kind": "gap-note",
+      "subjectId": "adsb-position-integrity",
+      "note": "The DO-260B NIC/NACp/SIL value tables themselves were not retrievable; only their existence and location were confirmed.",
+      "why": "RTCA DO-260B is a paid standard. Public sources confirm the tables are in §2.2.3 and describe what each category means, but do not reproduce the integer-to-containment-radius mapping. Any implementation needs the document; quoting specific radii from memory would be exactly the confabulation this rubric's source-required rule exists to prevent.",
+      "source": "https://www.federalregister.gov/documents/2023/10/17/2023-22710/inclusion-of-additional-automatic-dependent-surveillance-broadcast-ads-b-out-technical-standard"
+    },
+    {
+      "kind": "spec-suggestion",
+      "note": "Add a field for the cost of getting this wrong, distinct from severity.",
+      "why": "Several subjects here are cheap to fix now and very expensive after data has accumulated — the turbine parameter set, storing both altitudes, storing integrity categories. Severity captures what breaks; it does not capture that the fix window closes. A `fix_window` field (before-schema / before-launch / anytime) would let a reader sort by urgency rather than by damage."
+    },
+    {
+      "kind": "spec-suggestion",
+      "note": "Several difficult cases are schema-shaped: the model cannot represent the truth, rather than computing it wrongly.",
+      "why": "Altitude (two quantities, one field), heading (value without reference), engine parameters (wrong quantity entirely), identifiers (four ids, one key), timestamps (two times, one field). That recurrence is itself the finding: the dominant failure mode in telemetry modelling is not bad logic, it is a schema that cannot express the domain. Worth stating explicitly in the rendered output."
+    }
+  ]
+}

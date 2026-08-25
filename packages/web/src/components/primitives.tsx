@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-export type Tone = 'default' | 'cyan' | 'amber' | 'red' | 'green';
+export type Tone = 'default' | 'olive' | 'amber' | 'red';
 
 export function StatTile({
   label,
@@ -60,6 +60,35 @@ export function Panel({
 
 export function Empty({ children }: { children: ReactNode }): React.JSX.Element {
   return <div className="empty">{children}</div>;
+}
+
+/**
+ * A live-data heartbeat.
+ *
+ * On a page where every figure updates in place, a frozen page and a quiet
+ * period look identical. This is the only element that distinguishes them: it
+ * pulses while data is arriving and goes amber-and-still when the last update
+ * is older than it should be.
+ */
+export function Pulse({
+  capturedAt,
+  staleAfterMs = 8000,
+  nowMs = Date.now(),
+}: {
+  capturedAt: string | null | undefined;
+  staleAfterMs?: number;
+  nowMs?: number;
+}): React.JSX.Element {
+  const age = capturedAt ? nowMs - Date.parse(capturedAt) : Number.POSITIVE_INFINITY;
+  const stale = !Number.isFinite(age) || age > staleAfterMs;
+  return (
+    <span
+      className={`pulse${stale ? ' pulse--stale' : ''}`}
+      role="status"
+      aria-label={stale ? 'Data is stale' : 'Data is live'}
+      title={stale ? `No update for ${since(capturedAt, nowMs)}` : 'Live'}
+    />
+  );
 }
 
 export function ErrorNote({ children }: { children: ReactNode }): React.JSX.Element {

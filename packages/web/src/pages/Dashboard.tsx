@@ -3,7 +3,16 @@ import { Link } from 'react-router-dom';
 import { usePoll } from '../api.js';
 import { useDataSource } from '../data-source.js';
 import { PlanView } from '../components/PlanView.js';
-import { Empty, ErrorNote, Panel, Pill, StatTile, num, since } from '../components/primitives.js';
+import {
+  Empty,
+  ErrorNote,
+  Panel,
+  Pill,
+  Pulse,
+  StatTile,
+  num,
+  since,
+} from '../components/primitives.js';
 
 export function Dashboard(): React.JSX.Element {
   const { client, mode } = useDataSource();
@@ -62,7 +71,7 @@ export function Dashboard(): React.JSX.Element {
           label="Active aircraft"
           value={num(f?.aircraft_active)}
           note={`${num(f?.aircraft_stale)} stale · ${num(f?.aircraft_lost)} lost`}
-          tone="cyan"
+          tone="olive"
         />
         <StatTile
           label="Telemetry / min"
@@ -91,7 +100,7 @@ export function Dashboard(): React.JSX.Element {
           label="Critical alerts"
           value={num(f?.alerts_critical_last_hour)}
           note="last hour"
-          tone={(f?.alerts_critical_last_hour ?? 0) > 0 ? 'red' : 'green'}
+          tone={(f?.alerts_critical_last_hour ?? 0) > 0 ? 'red' : 'olive'}
         />
         <StatTile
           label="API p95"
@@ -107,7 +116,12 @@ export function Dashboard(): React.JSX.Element {
       <div className="grid grid--split">
         <Panel
           title="Plan view"
-          actions={<span className="faint mono">{num(fleet.data?.count)} tracked</span>}
+          actions={
+            <span className="row" style={{ gap: 8 }}>
+              <Pulse capturedAt={stats.data?.captured_at} />
+              <span className="faint">{num(fleet.data?.count)} tracked</span>
+            </span>
+          }
           bodyClassName="panel__body"
         >
           {fleet.data && fleet.data.aircraft.length > 0 ? (
