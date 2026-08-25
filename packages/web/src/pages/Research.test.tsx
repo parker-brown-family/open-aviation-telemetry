@@ -74,9 +74,7 @@ describe('Research page', () => {
     for (const field of subject!.fields) {
       const term = within(body!).getByText(field.label).closest('dt');
       expect(term).not.toBeNull();
-      const tag = within(term!).getByText(
-        field.status === 'cited' ? 'sourced' : field.status,
-      );
+      const tag = within(term!).getByText(field.status === 'cited' ? 'sourced' : field.status);
       expect(tag).toBeVisible();
     }
 
