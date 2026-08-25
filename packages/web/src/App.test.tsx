@@ -23,7 +23,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '../../..');
 
 /** Every path App declares, minus "/" and the catch-all. */
-const ROUTES = ['fleet', 'alerts', 'architecture', 'research', 'demo'];
+const ROUTES = ['fleet', 'alerts', 'architecture', 'research', 'training', 'demo'];
 
 beforeEach(() => {
   stubApiOffline();
