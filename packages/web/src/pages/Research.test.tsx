@@ -24,7 +24,9 @@ describe('Research page', () => {
     expect(heads).toHaveLength(RESEARCH_TOTALS.subjects);
 
     for (const subject of RESEARCH_SUBJECTS) {
-      expect(screen.getByRole('button', { name: new RegExp(escape(subject.label)) })).toBeVisible();
+      expect(
+        screen.getByRole('button', { name: new RegExp(`^${escape(subject.label)}`) }),
+      ).toBeVisible();
     }
 
     // Nothing from a case body is on the page until a case is opened.
@@ -37,7 +39,7 @@ describe('Research page', () => {
     renderWithProviders(<Research />);
 
     const subject = RESEARCH_SUBJECTS[0]!;
-    const head = screen.getByRole('button', { name: new RegExp(escape(subject.label)) });
+    const head = screen.getByRole('button', { name: new RegExp(`^${escape(subject.label)}`) });
 
     await user.click(head);
     expect(head).toHaveAttribute('aria-expanded', 'true');
@@ -48,14 +50,34 @@ describe('Research page', () => {
     expect(screen.queryByText(subject.fields[0]!.text)).toBeNull();
   });
 
+  it('closes a lesson from the button at the foot of it', async () => {
+    // An open lesson is taller than the window, so by the time you have read it
+    // the header that opened it is off screen. Closing has to be reachable from
+    // where the reading ends, not only from where it started.
+    const user = userEvent.setup();
+    renderWithProviders(<Research />);
+
+    const subject = RESEARCH_SUBJECTS[0]!;
+    const head = screen.getByRole('button', { name: new RegExp(`^${escape(subject.label)}`) });
+    await user.click(head);
+
+    const foot = screen.getByRole('button', { name: `Collapse ${subject.label}` });
+    // Not a second disclosure control: only the header announces the state, or
+    // a screen reader hears it twice.
+    expect(foot).not.toHaveAttribute('aria-expanded');
+
+    await user.click(foot);
+    expect(head).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText(subject.fields[0]!.text)).toBeNull();
+  });
+
   it('opens the case named in the query string', () => {
     const subject = RESEARCH_SUBJECTS[3]!;
     renderWithProviders(<Research />, { route: `/research?case=${subject.id}` });
 
-    expect(screen.getByRole('button', { name: new RegExp(escape(subject.label)) })).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    );
+    expect(
+      screen.getByRole('button', { name: new RegExp(`^${escape(subject.label)}`) }),
+    ).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByText(subject.fields[0]!.text)).toBeVisible();
   });
 
@@ -67,7 +89,9 @@ describe('Research page', () => {
     const subject = RESEARCH_SUBJECTS.find((s) => s.cited > 0 && s.cited < s.fields.length);
     expect(subject).toBeDefined();
 
-    await user.click(screen.getByRole('button', { name: new RegExp(escape(subject!.label)) }));
+    await user.click(
+      screen.getByRole('button', { name: new RegExp(`^${escape(subject!.label)}`) }),
+    );
     const body = document.getElementById(`case-${subject!.id}`);
     expect(body).not.toBeNull();
 
@@ -93,7 +117,7 @@ describe('Research page', () => {
 
     // "PT6A" appears in the body of the turbine case and nowhere in its title,
     // so a filter that only searched titles would return nothing.
-    await user.type(screen.getByLabelText('Filter cases'), 'PT6A');
+    await user.type(screen.getByLabelText('Filter lessons'), 'PT6A');
 
     const heads = screen.getAllByRole('button', { expanded: true });
     expect(heads.length).toBeGreaterThan(0);
@@ -105,9 +129,9 @@ describe('Research page', () => {
     const user = userEvent.setup();
     renderWithProviders(<Research />);
 
-    await user.type(screen.getByLabelText('Filter cases'), 'zzzznotathing');
+    await user.type(screen.getByLabelText('Filter lessons'), 'zzzznotathing');
 
-    expect(screen.getByText(/No case mentions/)).toBeVisible();
+    expect(screen.getByText(/No lesson mentions/)).toBeVisible();
     expect(screen.queryAllByRole('button', { expanded: true })).toHaveLength(0);
   });
 

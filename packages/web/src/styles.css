@@ -1884,3 +1884,52 @@ button.small {
   background: rgb(var(--olive) / 0.12);
   text-decoration: none;
 }
+
+/* ── research: page meta and the foot collapse ──────────────────────────── */
+
+/*
+ * The counts that used to be four stat tiles.
+ *
+ * They are context for the reading, not a scoreboard — how many lessons there
+ * are and how much of the material carries a citation. One faint line under the
+ * introduction says that without four boxes competing with the lessons
+ * themselves for the top of the page.
+ */
+.rs-meta {
+  margin: 10px 0 0 !important;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgb(var(--fg-faint)) !important;
+}
+
+.rs-case__foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid rgb(var(--olive) / 0.25);
+}
+
+/*
+ * Deliberately chunky. This is the control you reach for after reading a
+ * screenful of dense reference prose, often on a trackpad, and a 24-pixel target
+ * at the end of a long scroll is a miss waiting to happen.
+ */
+.rs-collapse {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 20px;
+  font-size: 12px;
+  border-color: rgb(var(--olive) / 0.6);
+}
+
+.rs-collapse__chevron {
+  display: inline-flex;
+  color: rgb(var(--olive-pale));
+}
+
+.rs-collapse:hover .rs-collapse__chevron {
+  color: rgb(var(--olive-bright));
+}

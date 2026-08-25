@@ -8,14 +8,16 @@ import {
   type ResearchField,
   type ResearchSubject,
 } from '../research-data.js';
-import { Empty, Panel, StatTile } from '../components/primitives.js';
+import { Empty, Panel } from '../components/primitives.js';
 
 /**
- * The research page.
+ * The research page — twenty-one lessons, as a thing to read and learn from
+ * rather than a report to file.
  *
- * Twenty-one difficult cases is more than anyone reads top to bottom, so the
- * default state is an index: one line per case, everything collapsed. The prose
- * is there when a case is opened, and not before.
+ * Twenty-one lessons is more than anyone reads top to bottom, so the default
+ * state is an index: one line each, everything collapsed. The prose is there
+ * when a lesson is opened, and not before. Opening one is a commitment of a
+ * screenful, so each lesson also closes from its own foot — see the note there.
  *
  * The original generated report coloured the prose itself — blue where a value
  * carried a source link, gold where it did not — which meant provenance was
@@ -133,6 +135,32 @@ function Case({
               <Field key={field.key} field={field} />
             ))}
           </dl>
+
+          {/*
+            A second way to close, at the end of the reading rather than at the
+            top of it. An open lesson is taller than the window, so the header
+            that opened it has scrolled away by the time you have finished — and
+            hunting back up the page for it is the wrong thing to ask of someone
+            working down the list. No aria-expanded here: the header is the
+            disclosure control, and two controls both announcing the state would
+            be read out twice.
+          */}
+          <div className="rs-case__foot">
+            <button
+              type="button"
+              className="rs-collapse"
+              aria-controls={bodyId}
+              aria-label={`Collapse ${subject.label}`}
+              onClick={() => onToggle(subject.id)}
+            >
+              <span className="rs-collapse__chevron" aria-hidden="true">
+                <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+                  <path d="M0.5 6.5 L4.5 0.5 L8.5 6.5 Z" fill="currentColor" />
+                </svg>
+              </span>
+              Collapse
+            </button>
+          </div>
         </div>
       ) : null}
     </article>
@@ -205,35 +233,24 @@ export function Research(): React.JSX.Element {
   return (
     <div className="stack">
       <div className="page__head">
-        <h1>Research — where this model is wrong</h1>
+        <h1>Twenty-one lessons in aircraft telemetry</h1>
         <p>
-          Before the telemetry schema hardened, twenty-one difficult-case families were checked
-          against the actual standards rather than against intuition. Each case states what the
-          naive model assumes, how the quantity is really encoded on the wire, what breaks, and what
-          a real system does instead. Values are labelled by how well they are sourced, because on a
-          page like this the provenance of a claim is part of the claim.
+          Each of these is a hard case in flight data, checked against the standard that actually
+          governs it — ADS-B, ARINC 429, ICAO Annex 10, Iridium SBD — rather than against intuition.
+          They were collected before this project’s telemetry schema hardened, and several of them
+          changed it.
         </p>
-      </div>
-
-      <div className="grid grid--stats">
-        <StatTile label="Subjects" value={RESEARCH_TOTALS.subjects} note="across 8 clusters" />
-        <StatTile
-          label="Complete"
-          value={`${RESEARCH_TOTALS.complete}/${RESEARCH_TOTALS.subjects}`}
-          note={`${RESEARCH_TOTALS.rounds} round, every required field filled`}
-          tone="olive"
-        />
-        <StatTile
-          label="Values sourced"
-          value={`${RESEARCH_TOTALS.citedFields}/${RESEARCH_TOTALS.totalFields}`}
-          note="the rest are labelled, not hidden"
-        />
-        <StatTile
-          label="Bubble-ups"
-          value={RESEARCH_TOTALS.bubbles}
-          note="findings the run raised on its own"
-          tone="amber"
-        />
+        <p>
+          Every lesson has the same shape: what the quantity looks like if you have never met it,
+          how it is really encoded on the wire, what breaks in code that assumes the first thing,
+          and what a system that knows better does instead. The lessons stand on their own — none of
+          them is specific to this codebase, and most of them cost somebody a real incident before
+          they were written down.
+        </p>
+        <p className="rs-meta">
+          {RESEARCH_TOTALS.subjects} lessons · {RESEARCH_GROUPS.length} clusters ·{' '}
+          {RESEARCH_TOTALS.citedFields} of {RESEARCH_TOTALS.totalFields} values carry a source link
+        </p>
       </div>
 
       <Panel title="How to read this">
@@ -267,13 +284,13 @@ export function Research(): React.JSX.Element {
         <input
           type="search"
           className="rs-search"
-          placeholder="filter cases…"
-          aria-label="Filter cases"
+          placeholder="filter lessons…"
+          aria-label="Filter lessons"
           value={query}
           onChange={(event) => search(event.target.value)}
         />
         <span className="faint">
-          {matches} of {RESEARCH_TOTALS.subjects} cases
+          {matches} of {RESEARCH_TOTALS.subjects} lessons
         </span>
         <span className="button-row">
           <button type="button" className="small" onClick={() => setOpenIds(new Set(allIds))}>
@@ -285,7 +302,7 @@ export function Research(): React.JSX.Element {
         </span>
       </div>
 
-      {groups.length === 0 ? <Empty>No case mentions “{query.trim()}”.</Empty> : null}
+      {groups.length === 0 ? <Empty>No lesson mentions “{query.trim()}”.</Empty> : null}
 
       {groups.map((group) => (
         <Panel key={group.name} title={group.name} bodyClassName="rs-cases">
