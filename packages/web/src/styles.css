@@ -1425,6 +1425,46 @@ button.small {
 
 /* ── view switch + altitude legend ────────────────────────────────────── */
 
+/*
+ * The datum selector. Styled as instrument furniture rather than a web form:
+ * a native <select> for the keyboard and screen-reader behaviour, with the
+ * browser chrome stripped back to the panel's own idiom.
+ */
+.datum__label {
+  color: rgb(var(--olive-pale));
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+.datum__select {
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: rgb(var(--fg));
+  background: rgb(var(--bg) / 0.85);
+  border: 1px solid rgb(var(--olive) / 0.55);
+  border-radius: var(--radius);
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.datum__select:hover {
+  border-color: rgb(var(--olive-bright) / 0.8);
+}
+
+.datum__select:focus-visible {
+  outline: none;
+  border-color: rgb(var(--orange));
+  box-shadow: 0 0 0 2px rgb(var(--orange) / 0.28);
+}
+
+/* The dark panel background does not reach the native option list. */
+.datum__select option {
+  background: rgb(var(--bg));
+  color: rgb(var(--fg));
+}
+
 .view-switch {
   display: inline-flex;
   border: 1px solid rgb(var(--olive) / 0.5);

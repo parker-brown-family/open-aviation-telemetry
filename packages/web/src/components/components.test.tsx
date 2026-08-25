@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { REGION, type AircraftState } from '@oat/shared';
+import { REGION, datumByIata, type AircraftState } from '@oat/shared';
+import { SAMPLE } from '../sample-data.js';
 import { Empty, Panel, Pill, StatTile, num, since } from './primitives.js';
 import { PlanView } from './PlanView.js';
 
@@ -115,18 +116,27 @@ function aircraft(overrides: Partial<AircraftState> = {}): AircraftState {
 }
 
 /** Builds N distinct aircraft, so density-dependent behaviour can be exercised. */
+/**
+ * A fleet spread across the display, rather than stacked on one point.
+ *
+ * The spacing is proportional to the count so the aircraft always fill the
+ * window: at a fixed 0.1° step, six aircraft occupy thirty nautical miles of a
+ * six-hundred-mile scope, which is a density case wearing a small-fleet label.
+ */
 function fleet(count: number): AircraftState[] {
-  return Array.from({ length: count }, (_, i) =>
-    aircraft({
+  return Array.from({ length: count }, (_, i) => {
+    const t = count === 1 ? 0.5 : i / (count - 1);
+    return aircraft({
       aircraft_id: `C-G${String(i).padStart(3, '0')}`,
       callsign: `OKA${100 + i}`,
       latest: {
         ...aircraft().latest!,
         aircraft_id: `C-G${String(i).padStart(3, '0')}`,
-        position: { latitude: 49 + i * 0.1, longitude: -120 + i * 0.1 },
+        // Across the Kelowna window: roughly 46°–54°N, 130°–109°W.
+        position: { latitude: 46.5 + t * 7, longitude: -129 + t * 19 },
       },
-    }),
-  );
+    });
+  });
 }
 
 describe('PlanView', () => {
@@ -196,6 +206,135 @@ describe('PlanView', () => {
     expect(container.querySelectorAll('.pv-range-ring')).toHaveLength(3);
   });
 
+  describe('centring on a datum', () => {
+    const centreOf = (container: HTMLElement): { x: number; y: number } => {
+      const rings = container.querySelectorAll('.pv-range-ring');
+      const ring = rings[0]!;
+      return { x: Number(ring.getAttribute('cx')), y: Number(ring.getAttribute('cy')) };
+    };
+
+    it('puts the datum in the middle of the scope', () => {
+      // viewBox is 100 x 62.
+      const { container } = render(<PlanView aircraft={[]} datum={datumByIata('YLW')} />);
+      const c = centreOf(container);
+      expect(c.x).toBeCloseTo(50, 0);
+      expect(c.y).toBeCloseTo(31, 0);
+    });
+
+    it('puts a different datum in the middle too, rather than only moving the rings', () => {
+      // The window follows the datum. If only the rings moved, the centre would
+      // drift off to wherever Calgary falls in a Kelowna-shaped window.
+      const { container } = render(<PlanView aircraft={[]} datum={datumByIata('YYC')} />);
+      const c = centreOf(container);
+      expect(c.x).toBeCloseTo(50, 0);
+      expect(c.y).toBeCloseTo(31, 0);
+    });
+
+    it('moves the picture when the datum changes', () => {
+      const kelowna = render(<PlanView aircraft={[aircraft()]} datum={datumByIata('YLW')} />);
+      const near = kelowna.container.querySelector('.pv-hit')!.getAttribute('cx');
+      kelowna.unmount();
+
+      const edmonton = render(<PlanView aircraft={[aircraft()]} datum={datumByIata('YEG')} />);
+      const far = edmonton.container.querySelector('.pv-hit')!.getAttribute('cx');
+
+      // Same aircraft, same latitude and longitude, different window.
+      expect(near).not.toBe(far);
+    });
+
+    it('names the datum in the legend', () => {
+      const { getByText } = render(<PlanView aircraft={[]} datum={datumByIata('YEG')} />);
+      expect(getByText(/nm from/).textContent).toMatch(/YEG/);
+    });
+
+    it('names the datum to assistive tech', () => {
+      const { container } = render(<PlanView aircraft={[]} datum={datumByIata('YVR')} />);
+      expect(container.querySelector('svg')?.getAttribute('aria-label')).toMatch(/Vancouver/);
+    });
+
+    it('leaves out airports beyond the window instead of clipping them at the edge', () => {
+      // Projecting an out-of-region airport yields coordinates past the viewBox,
+      // and its label gets sliced mid-glyph against the border — which reads as
+      // a rendering fault rather than as somewhere off-scope.
+      const { container } = render(<PlanView aircraft={[]} datum={datumByIata('YVR')} />);
+      for (const dot of container.querySelectorAll('.pv-airport-dot')) {
+        const x = Number(dot.getAttribute('cx'));
+        const y = Number(dot.getAttribute('cy'));
+        expect(x).toBeGreaterThanOrEqual(0);
+        expect(x).toBeLessThanOrEqual(100);
+        expect(y).toBeGreaterThanOrEqual(0);
+        expect(y).toBeLessThanOrEqual(62);
+      }
+    });
+
+    it('never draws two data blocks on top of each other', () => {
+      // Re-centring bunches the fleet into one corner, which is where the
+      // placer runs out of candidate offsets. An overlapping pair is not two
+      // half-readable labels — the one underneath is invisible.
+      const fleet = Array.from({ length: 14 }, (_, i) =>
+        aircraft({
+          aircraft_id: `C-G${String(i).padStart(3, '0')}`,
+          callsign: `TST${i}`,
+          latest: {
+            ...aircraft().latest!,
+            // Deliberately tight cluster: 14 targets inside a third of a degree.
+            position: { latitude: 49.9 + (i % 4) * 0.08, longitude: -119.4 + (i % 3) * 0.1 },
+          },
+        }),
+      );
+
+      const { container } = render(<PlanView aircraft={fleet} datum={datumByIata('YYC')} />);
+      const rects = [...container.querySelectorAll('.pv-block-bg')].map((r) => ({
+        x: Number(r.getAttribute('x')),
+        y: Number(r.getAttribute('y')),
+        w: Number(r.getAttribute('width')),
+        h: Number(r.getAttribute('height')),
+      }));
+
+      for (let i = 0; i < rects.length; i += 1) {
+        for (let j = i + 1; j < rects.length; j += 1) {
+          const a = rects[i]!;
+          const b = rects[j]!;
+          const hit = a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+          expect(hit, `data blocks ${i} and ${j} overlap`).toBe(false);
+        }
+      }
+    });
+
+    it('keeps the block for an alerting target even when the scope is crowded', () => {
+      // Dropping crowded blocks must not drop the one you are looking for.
+      const fleet = Array.from({ length: 14 }, (_, i) =>
+        aircraft({
+          aircraft_id: `C-G${String(i).padStart(3, '0')}`,
+          callsign: `TST${i}`,
+          latest: {
+            ...aircraft().latest!,
+            position: { latitude: 49.9 + (i % 4) * 0.08, longitude: -119.4 + (i % 3) * 0.1 },
+          },
+        }),
+      );
+
+      const { container } = render(
+        <PlanView aircraft={fleet} alerting={new Set(['C-G013'])} datum={datumByIata('YYC')} />,
+      );
+      const texts = [...container.querySelectorAll('.pv-block-text')].map((t) => t.textContent);
+      expect(texts).toContain('TST13');
+    });
+
+    it('still shows enough fixed points to read the scope by', () => {
+      // The filter must not empty the display: a scope with no airports on it
+      // gives the eye nothing to place the aircraft against.
+      for (const iata of ['YLW', 'YVR', 'YYC', 'YEG', 'YXS']) {
+        const { container, unmount } = render(<PlanView aircraft={[]} datum={datumByIata(iata)} />);
+        expect(
+          container.querySelectorAll('.pv-airport-dot').length,
+          `${iata} shows too few reference points`,
+        ).toBeGreaterThanOrEqual(2);
+        unmount();
+      }
+    });
+  });
+
   it('draws a compass rose with the four cardinals', () => {
     const { container } = render(<PlanView aircraft={[]} />);
     const labels = Array.from(container.querySelectorAll('.pv-compass-label')).map(
@@ -242,6 +381,13 @@ describe('PlanView', () => {
     it('shows a block for every aircraft while the fleet is small', () => {
       const { container } = render(<PlanView aircraft={fleet(6)} />);
       expect(container.querySelectorAll('.pv-block')).toHaveLength(6);
+    });
+
+    it('labels the whole sample fleet on the default view', () => {
+      // The common case, guarded directly: dropping blocks that cannot be
+      // placed must not start dropping them on the picture people actually see.
+      const { container } = render(<PlanView aircraft={[...SAMPLE.aircraft]} />);
+      expect(container.querySelectorAll('.pv-block')).toHaveLength(SAMPLE.aircraft.length);
     });
 
     it('shows blocks only for selected and alerting targets once the fleet is dense', () => {

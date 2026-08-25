@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { usePoll } from '../api.js';
 import { useDataSource } from '../data-source.js';
+import { DatumPicker, useDatum } from '../components/DatumPicker.js';
 import { PlanView } from '../components/PlanView.js';
 import {
   Empty,
@@ -16,6 +17,7 @@ import {
 
 export function Dashboard(): React.JSX.Element {
   const { client, mode } = useDataSource();
+  const [datum, setDatum] = useDatum();
 
   const fetchStats = useCallback(() => client.stats(), [client]);
   const fetchAircraft = useCallback(() => client.aircraft(), [client]);
@@ -117,15 +119,15 @@ export function Dashboard(): React.JSX.Element {
         <Panel
           title="Plan view"
           actions={
-            <span className="row" style={{ gap: 8 }}>
+            <DatumPicker datum={datum} onChange={setDatum}>
               <Pulse capturedAt={stats.data?.captured_at} />
               <span className="faint">{num(fleet.data?.count)} tracked</span>
-            </span>
+            </DatumPicker>
           }
           bodyClassName="panel__body"
         >
           {fleet.data && fleet.data.aircraft.length > 0 ? (
-            <PlanView aircraft={fleet.data.aircraft} alerting={alerting} />
+            <PlanView aircraft={fleet.data.aircraft} alerting={alerting} datum={datum} />
           ) : (
             <Empty>
               No aircraft are reporting.{' '}

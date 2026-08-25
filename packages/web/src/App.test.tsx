@@ -22,8 +22,29 @@ import { renderWithProviders, stubApiOffline } from './test-utils.js';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '../../..');
 
-/** Every path App declares, minus "/" and the catch-all. */
-const ROUTES = ['fleet', 'alerts', 'architecture', 'research', 'training', 'demo'];
+/**
+ * Both lists are read from source rather than restated here.
+ *
+ * This file used to keep its own copy of the routes, which made three places to
+ * update instead of two — and the first time a route was added it was the
+ * test's copy that went stale, not the code. A guard that needs maintaining
+ * every time the thing it guards changes is a guard people eventually delete.
+ */
+function declaredRoutes(): string[] {
+  const source = readFileSync(path.join(here, 'App.tsx'), 'utf8');
+  return [...source.matchAll(/<Route\s+path="([^"]+)"/g)]
+    .map((m) => m[1]!)
+    .filter((p) => p !== '/' && p !== '*')
+    .map((p) => p.replace(/^\//, ''))
+    .sort();
+}
+
+function prerenderedRoutes(): string[] {
+  const script = readFileSync(path.join(repoRoot, 'scripts/build-static.sh'), 'utf8');
+  const declared = /^ROUTES=\(([^)]*)\)/m.exec(script);
+  if (!declared) throw new Error('ROUTES not found in scripts/build-static.sh');
+  return declared[1]!.trim().split(/\s+/).sort();
+}
 
 beforeEach(() => {
   stubApiOffline();
@@ -66,39 +87,24 @@ describe('routes', () => {
 });
 
 describe('the published build', () => {
-  const script = readFileSync(path.join(repoRoot, 'scripts/build-static.sh'), 'utf8');
-
   it('materialises a directory for every client-side route', () => {
     // Without this, a deep link to /architecture is a request for a file the
-    // static host does not have. It works in dev and 404s in production.
-    const declared = /^ROUTES=\(([^)]*)\)/m.exec(script);
-    expect(declared, 'ROUTES not found in build-static.sh').not.toBeNull();
-
-    const listed = declared![1]!.trim().split(/\s+/);
-    for (const route of ROUTES) {
-      expect(listed, `/${route} is not pre-rendered by build-static.sh`).toContain(route);
-    }
+    // static host does not have: it works in dev and 404s in production.
+    const missing = declaredRoutes().filter((r) => !prerenderedRoutes().includes(r));
+    expect(missing, `not pre-rendered by build-static.sh: ${missing.join(', ')}`).toEqual([]);
   });
 
   it('does not pre-render a route the application no longer serves', () => {
-    const listed = /^ROUTES=\(([^)]*)\)/m.exec(script)![1]!.trim().split(/\s+/);
-    for (const route of listed) {
-      expect(ROUTES, `build-static.sh pre-renders /${route}, which App does not serve`).toContain(
-        route,
-      );
-    }
+    // The other direction: a stale entry silently ships an empty directory.
+    const orphaned = prerenderedRoutes().filter((r) => !declaredRoutes().includes(r));
+    expect(orphaned, `pre-rendered but not served: ${orphaned.join(', ')}`).toEqual([]);
   });
 
-  it('lists every route the App component declares', () => {
-    // Guards the guard: if a Route is added to App.tsx and not to ROUTES above,
-    // the two tests before this one would keep passing while the new route goes
-    // unbuilt.
-    const source = readFileSync(path.join(here, 'App.tsx'), 'utf8');
-    const paths = [...source.matchAll(/<Route\s+path="([^"]+)"/g)]
-      .map((m) => m[1]!)
-      .filter((p) => p !== '/' && p !== '*')
-      .map((p) => p.replace(/^\//, ''));
-
-    expect(paths.sort()).toEqual([...ROUTES].sort());
+  it('finds routes to check at all', () => {
+    // Guards the guard. Both lists are parsed out of source, so a regex that
+    // stops matching would leave the two tests above comparing empty arrays and
+    // passing while the coupling they exist to protect went unchecked.
+    expect(declaredRoutes().length).toBeGreaterThan(3);
+    expect(prerenderedRoutes().length).toBeGreaterThan(3);
   });
 });

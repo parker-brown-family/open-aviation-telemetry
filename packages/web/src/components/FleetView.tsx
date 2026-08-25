@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { AircraftState, TelemetryReport } from '@oat/shared';
+import type { Airport, AircraftState, TelemetryReport } from '@oat/shared';
 import { PlanView } from './PlanView.js';
 import { TacticalMap } from './TacticalMap.js';
 import { ALTITUDE_BANDS } from './basemap.js';
@@ -28,6 +28,8 @@ export interface FleetViewProps {
   trail?: TelemetryReport[];
   /** Starting mode. Defaults to the map. */
   initialMode?: FleetViewMode;
+  /** The field both displays centre on. */
+  datum?: Airport;
 }
 
 export function FleetView({
@@ -37,6 +39,7 @@ export function FleetView({
   onSelect,
   trail,
   initialMode = 'map',
+  datum,
 }: FleetViewProps): React.JSX.Element {
   const [mode, setMode] = useState<FleetViewMode>(initialMode);
   const [tilesFailed, setTilesFailed] = useState(false);
@@ -84,6 +87,7 @@ export function FleetView({
             selectedId={selectedId ?? null}
             {...(onSelect ? { onSelect } : {})}
             {...(trail ? { trail } : {})}
+            {...(datum ? { datum } : {})}
             onTilesUnavailable={() => setTilesFailed(true)}
           />
           <div className="alt-legend">
@@ -107,6 +111,7 @@ export function FleetView({
           selectedId={selectedId ?? null}
           {...(onSelect ? { onSelect } : {})}
           {...(trail ? { trail } : {})}
+          {...(datum ? { datum } : {})}
         />
       )}
     </div>

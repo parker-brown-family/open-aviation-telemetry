@@ -81,3 +81,37 @@ export function projectToUnitSquare(p: LatLon, box: BoundingBox): { x: number; y
   const y = (box.north - p.latitude) / (box.north - box.south);
   return { x, y };
 }
+
+/**
+ * A display window centred on a point, sized so distance reads the same on both
+ * axes.
+ *
+ * Equirectangular projection stretches longitude: a degree of longitude is
+ * 60·cos(latitude) nautical miles, against a flat 60 for latitude. Taking the
+ * same number of degrees on each axis therefore squashes the picture — at 50°N
+ * by about a third — and a range ring drawn on it would be an ellipse
+ * pretending to be a circle.
+ *
+ * So the longitude span is widened by 1/cos(latitude) and by the viewport's
+ * aspect ratio, which makes one viewBox unit the same number of nautical miles
+ * horizontally as vertically.
+ *
+ * @param centre       the datum the window is built around
+ * @param halfHeightNm distance from the centre to the top edge
+ * @param aspect       viewport width ÷ height
+ */
+export function regionAround(centre: LatLon, halfHeightNm: number, aspect: number): BoundingBox {
+  const halfLat = halfHeightNm / 60;
+  // Guard the poles: cos → 0 makes the longitude span diverge. Nothing this
+  // project displays goes near them, but a NaN region would be a blank screen
+  // with no clue as to why.
+  const cos = Math.max(0.05, Math.cos(toRad(centre.latitude)));
+  const halfLon = (halfLat * aspect) / cos;
+
+  return {
+    north: centre.latitude + halfLat,
+    south: centre.latitude - halfLat,
+    west: centre.longitude - halfLon,
+    east: centre.longitude + halfLon,
+  };
+}

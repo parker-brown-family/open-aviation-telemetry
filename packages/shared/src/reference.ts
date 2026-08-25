@@ -132,6 +132,29 @@ export function airportByIata(iata: string): Airport | undefined {
   return AIRPORTS.find((a) => a.iata === iata);
 }
 
+/**
+ * The fields a display can be centred on.
+ *
+ * Derived from the `major` flag rather than listed again, so adding a datum is
+ * a data change in AIRPORTS above and not an edit in two places that can
+ * disagree. Small fields stay plottable but are not offered as an anchor —
+ * centring a 600-nm-tall window on Castlegar shows mostly empty terrain.
+ */
+export const DATUMS: readonly Airport[] = AIRPORTS.filter((a) => a.major);
+
+/** Where a display opens: Kelowna, because that is where the fleet is based. */
+export const DEFAULT_DATUM: Airport = airportByIata('YLW') ?? AIRPORTS[0]!;
+
+export function isDatum(iata: string): boolean {
+  return DATUMS.some((a) => a.iata === iata);
+}
+
+/** The datum for an IATA code, falling back to the default for an unknown one. */
+export function datumByIata(iata: string | null | undefined): Airport {
+  if (!iata) return DEFAULT_DATUM;
+  return DATUMS.find((a) => a.iata === iata) ?? DEFAULT_DATUM;
+}
+
 /** The plan-view display window. Chosen to contain every airport above. */
 export const REGION: BoundingBox = {
   north: 57.5,

@@ -30,9 +30,7 @@ afterEach(() => {
 /** Wait for the sample fleet to arrive. */
 const readyFleet = async (): Promise<void> => {
   await waitFor(() => expect(screen.getByLabelText(FILTER)).toBeInTheDocument());
-  await waitFor(() =>
-    expect(screen.getByText(`${SAMPLE.aircraft.length} tracked · datum YLW`)).toBeVisible(),
-  );
+  await waitFor(() => expect(screen.getByText(`${SAMPLE.aircraft.length} tracked`)).toBeVisible());
 };
 
 describe('before anything is selected', () => {

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import type { AircraftState } from '@oat/shared';
 import { usePoll } from '../api.js';
 import { useDataSource } from '../data-source.js';
+import { DatumPicker, useDatum } from '../components/DatumPicker.js';
 import { FleetView } from '../components/FleetView.js';
 import { useFleetTable } from '../components/useFleetTable.js';
 import { Empty, ErrorNote, Panel, Pill, num, since } from '../components/primitives.js';
@@ -15,6 +16,7 @@ export function Fleet(): React.JSX.Element {
   const selectedId = params.get('aircraft');
   const [reportMessage, setReportMessage] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const [datum, setDatum] = useDatum();
 
   const fetchAircraft = useCallback(() => client.aircraft(), [client]);
   const fetchAlerts = useCallback(() => client.alerts(200), [client]);
@@ -148,9 +150,11 @@ export function Fleet(): React.JSX.Element {
         <Panel
           title="Plan view"
           actions={
-            <span className="faint" style={{ fontSize: 10.5, letterSpacing: '0.12em' }}>
-              {table.rows.length} tracked · datum YLW
-            </span>
+            <DatumPicker datum={datum} onChange={setDatum}>
+              <span className="faint" style={{ fontSize: 10.5, letterSpacing: '0.12em' }}>
+                {table.rows.length} tracked
+              </span>
+            </DatumPicker>
           }
           bodyClassName=""
         >
@@ -160,6 +164,7 @@ export function Fleet(): React.JSX.Element {
             selectedId={selectedId}
             onSelect={select}
             trail={history.data?.telemetry ?? []}
+            datum={datum}
           />
         </Panel>
 

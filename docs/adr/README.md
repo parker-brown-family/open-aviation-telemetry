@@ -21,3 +21,4 @@ explains.
 | [0009](0009-explain-rather-than-implement.md)  | Document some production concerns instead of implementing them | Accepted |
 | [0010](0010-honest-data-provenance.md)         | The client always states where its numbers came from           | Accepted |
 | [0011](0011-two-fleet-views.md)                | A terrain basemap, falling back to a self-contained scope      | Accepted |
+| [0012](0012-reference-data-is-bundled.md)      | Reference data is bundled, not fetched — and when that flips   | Accepted |

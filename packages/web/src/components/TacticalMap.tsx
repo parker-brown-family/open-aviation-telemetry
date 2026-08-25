@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { AIRPORTS, type AircraftState, type TelemetryReport } from '@oat/shared';
+import { AIRPORTS, type Airport, type AircraftState, type TelemetryReport } from '@oat/shared';
 import {
   INITIAL_VIEW,
   LABELS_LAYER,
@@ -31,6 +31,8 @@ export interface TacticalMapProps {
   selectedId?: string | null;
   onSelect?: (aircraftId: string) => void;
   trail?: TelemetryReport[];
+  /** The field the map centres on. Changing it pans, without resetting zoom. */
+  datum?: Airport;
   /** Called once if the basemap cannot load, so the caller can fall back. */
   onTilesUnavailable?: () => void;
 }
@@ -48,6 +50,7 @@ export function TacticalMap({
   selectedId = null,
   onSelect,
   trail = [],
+  datum,
   onTilesUnavailable,
 }: TacticalMapProps): React.JSX.Element {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -129,6 +132,15 @@ export function TacticalMap({
     // this effect would tear down and rebuild the whole map.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── follow the datum ─────────────────────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !datum) return;
+    // Pan rather than setView: whatever zoom the reader has chosen is theirs to
+    // keep. Re-centring should move the picture, not reset how far in they are.
+    map.panTo([datum.latitude, datum.longitude], { animate: true, duration: 0.6 });
+  }, [datum]);
 
   // ── sync markers to the fleet ────────────────────────────────────────────
   useEffect(() => {

@@ -1,10 +1,12 @@
 import {
   AIRPORTS,
-  REGION,
-  airportByIata,
+  DEFAULT_DATUM,
   destinationPoint,
   projectToUnitSquare,
+  regionAround,
+  type Airport,
   type AircraftState,
+  type BoundingBox,
   type LatLon,
   type TelemetryReport,
 } from '@oat/shared';
@@ -41,11 +43,17 @@ import { placeDataBlocks, tiePoint } from './dataBlocks.js';
 const W = 100;
 const H = 62;
 
-/** The scope datum. Kelowna, because that is where the fleet is based. */
-const DATUM = airportByIata('YLW') ?? AIRPORTS[0]!;
-
 /** Range ring radii, nautical miles. */
 const RANGE_RINGS_NM = [100, 200, 300];
+
+/**
+ * Half the window height, in nautical miles.
+ *
+ * Equal to the outermost range ring, so that ring touches the top and bottom
+ * edges: the scope shows exactly the area it draws a scale for, whichever field
+ * it is centred on.
+ */
+const HALF_HEIGHT_NM = RANGE_RINGS_NM[RANGE_RINGS_NM.length - 1]!;
 
 /**
  * Show a data block for every aircraft while the fleet is small enough that the
@@ -61,17 +69,27 @@ const LEADER_MINUTES = 1;
 const BLOCK_W = 9.6;
 const BLOCK_H = 4.4;
 
-function project(p: LatLon): { x: number; y: number } {
-  const unit = projectToUnitSquare(p, REGION);
+function projectInto(p: LatLon, region: BoundingBox): { x: number; y: number } {
+  const unit = projectToUnitSquare(p, region);
   return { x: unit.x * W, y: unit.y * H };
 }
 
 /** Distance in viewBox units from the datum to a point `nm` away, per axis. */
-function ringRadii(nm: number): { rx: number; ry: number } {
-  const centre = project(DATUM);
-  const east = project(destinationPoint(DATUM, 90, nm));
-  const north = project(destinationPoint(DATUM, 0, nm));
+function ringRadii(nm: number, datum: LatLon, region: BoundingBox): { rx: number; ry: number } {
+  const centre = projectInto(datum, region);
+  const east = projectInto(destinationPoint(datum, 90, nm), region);
+  const north = projectInto(destinationPoint(datum, 0, nm), region);
   return { rx: Math.abs(east.x - centre.x), ry: Math.abs(north.y - centre.y) };
+}
+
+/** Is this point inside the drawn window? Used to skip off-scope furniture. */
+function withinRegion(p: LatLon, region: BoundingBox): boolean {
+  return (
+    p.latitude <= region.north &&
+    p.latitude >= region.south &&
+    p.longitude >= region.west &&
+    p.longitude <= region.east
+  );
 }
 
 export interface PlanViewProps {
@@ -84,6 +102,8 @@ export interface PlanViewProps {
   trail?: TelemetryReport[];
   /** Hide the legend when the surrounding panel already explains the view. */
   showLegend?: boolean;
+  /** The field the scope is centred on. The window follows it. */
+  datum?: Airport;
 }
 
 export function PlanView({
@@ -93,14 +113,23 @@ export function PlanView({
   onSelect,
   trail = [],
   showLegend = true,
+  datum = DEFAULT_DATUM,
 }: PlanViewProps): React.JSX.Element {
-  const centre = project(DATUM);
+  // The window is derived from the datum rather than fixed, so choosing a
+  // different field re-centres the picture instead of only moving the rings.
+  const region = regionAround(datum, HALF_HEIGHT_NM, W / H);
+  const project = (p: LatLon): { x: number; y: number } => projectInto(p, region);
+  const centre = project(datum);
 
-  // Whole-degree graticule across the region.
+  // Graticule across the window. The interval adapts because a window centred
+  // further north spans more longitude for the same distance, and a fixed 4°
+  // step would crowd the display.
+  const lonStep = region.east - region.west > 30 ? 8 : 4;
   const meridians: number[] = [];
-  for (let lon = Math.ceil(REGION.west / 4) * 4; lon <= REGION.east; lon += 4) meridians.push(lon);
+  for (let lon = Math.ceil(region.west / lonStep) * lonStep; lon <= region.east; lon += lonStep)
+    meridians.push(lon);
   const parallels: number[] = [];
-  for (let lat = Math.ceil(REGION.south / 2) * 2; lat <= REGION.north; lat += 2)
+  for (let lat = Math.ceil(region.south / 2) * 2; lat <= region.north; lat += 2)
     parallels.push(lat);
 
   const trailPath =
@@ -151,25 +180,25 @@ export function PlanView({
       <svg
         viewBox={`0 0 ${W} ${H}`}
         role="img"
-        aria-label={`Plan view of ${aircraft.length} aircraft over British Columbia and Alberta, centred on ${DATUM.name}`}
+        aria-label={`Plan view of ${aircraft.length} aircraft, centred on ${datum.name} with range rings at ${RANGE_RINGS_NM.join(', ')} nautical miles`}
       >
         {/* ── graticule ─────────────────────────────────────────────────── */}
         <g className="pv-graticule">
           {meridians.map((lon) => {
-            const a = project({ latitude: REGION.north, longitude: lon });
-            const b = project({ latitude: REGION.south, longitude: lon });
+            const a = project({ latitude: region.north, longitude: lon });
+            const b = project({ latitude: region.south, longitude: lon });
             return <line key={`m${lon}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} />;
           })}
           {parallels.map((lat) => {
-            const a = project({ latitude: lat, longitude: REGION.west });
-            const b = project({ latitude: lat, longitude: REGION.east });
+            const a = project({ latitude: lat, longitude: region.west });
+            const b = project({ latitude: lat, longitude: region.east });
             return <line key={`p${lat}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} />;
           })}
         </g>
 
         <g>
           {parallels.map((lat) => {
-            const p = project({ latitude: lat, longitude: REGION.west });
+            const p = project({ latitude: lat, longitude: region.west });
             return (
               <text key={`pl${lat}`} className="pv-graticule-label" x={0.6} y={p.y - 0.4}>
                 {Math.abs(lat)}
@@ -178,7 +207,7 @@ export function PlanView({
             );
           })}
           {meridians.map((lon) => {
-            const p = project({ latitude: REGION.south, longitude: lon });
+            const p = project({ latitude: region.south, longitude: lon });
             return (
               <text key={`ml${lon}`} className="pv-graticule-label" x={p.x + 0.4} y={H - 0.6}>
                 {Math.abs(lon)}
@@ -191,7 +220,7 @@ export function PlanView({
         {/* ── range rings from the datum ────────────────────────────────── */}
         <g>
           {RANGE_RINGS_NM.map((nm) => {
-            const { rx, ry } = ringRadii(nm);
+            const { rx, ry } = ringRadii(nm, datum, region);
             return (
               <g key={`r${nm}`}>
                 <ellipse className="pv-range-ring" cx={centre.x} cy={centre.y} rx={rx} ry={ry} />
@@ -207,7 +236,7 @@ export function PlanView({
         <g>
           {Array.from({ length: 36 }, (_, i) => i * 10).map((brg) => {
             const cardinal = brg % 90 === 0;
-            const { rx, ry } = ringRadii(RANGE_RINGS_NM[0] ?? 100);
+            const { rx, ry } = ringRadii(RANGE_RINGS_NM[0] ?? 100, datum, region);
             const r = Math.min(rx, ry);
             const rad = ((brg - 90) * Math.PI) / 180;
             const inner = cardinal ? r - 1.6 : r - 0.8;
@@ -230,7 +259,7 @@ export function PlanView({
               ['W', 270],
             ] as const
           ).map(([label, brg]) => {
-            const { rx, ry } = ringRadii(RANGE_RINGS_NM[0] ?? 100);
+            const { rx, ry } = ringRadii(RANGE_RINGS_NM[0] ?? 100, datum, region);
             const r = Math.min(rx, ry) + 1.8;
             const rad = ((brg - 90) * Math.PI) / 180;
             return (
@@ -249,7 +278,13 @@ export function PlanView({
 
         {/* ── airports ──────────────────────────────────────────────────── */}
         <g>
-          {AIRPORTS.map((airport) => {
+          {/*
+            Only the fields inside the window. Without this, projecting an
+            airport outside the region yields coordinates beyond the viewBox and
+            its label is clipped mid-glyph at the edge — which reads as a
+            rendering fault rather than as somewhere off-scope.
+          */}
+          {AIRPORTS.filter((airport) => withinRegion(airport, region)).map((airport) => {
             const p = project(airport);
             return (
               <g key={airport.iata} className={airport.major ? '' : 'pv-airport--minor'}>
@@ -298,7 +333,26 @@ export function PlanView({
                 ? project(destinationPoint(latest.position, latest.heading_deg, aheadNm))
                 : null;
 
-            const block = blocks.get(ac.aircraft_id) ?? null;
+            /*
+             * Drop a block the placer could not fit.
+             *
+             * `crowded` means every candidate offset collided and it returned
+             * an overlapping rectangle anyway. Two labels printed on top of
+             * each other are not half-readable, they are unreadable — and the
+             * one underneath is invisible rather than obviously missing.
+             *
+             * This matters more since the scope became re-centrable: a fleet
+             * that spreads comfortably over a window centred on its own base
+             * bunches into one corner when the datum moves, and BLOCK_ALL_BELOW
+             * cannot see that because it counts aircraft rather than measuring
+             * density. The selected and alerting targets keep their block
+             * regardless — those are the two you are looking for.
+             */
+            const placement = blocks.get(ac.aircraft_id) ?? null;
+            const block =
+              placement && placement.crowded && !isSelected && !alerting.has(ac.aircraft_id)
+                ? null
+                : placement;
 
             return (
               <g key={ac.aircraft_id}>
@@ -414,7 +468,7 @@ export function PlanView({
           </span>
           <span>leader = {LEADER_MINUTES} min of travel</span>
           <span>
-            rings = {RANGE_RINGS_NM.join(' / ')} nm from {DATUM.iata}
+            rings = {RANGE_RINGS_NM.join(' / ')} nm from {datum.iata}
           </span>
           <span>block = callsign / alt×100ft / gs×10kt</span>
         </div>
