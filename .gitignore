@@ -1,0 +1,37 @@
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+.env
+.env.local
+*.local
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+!example.tfvars
+tfplan
+tfplan.*
+
+# CDK
+cdk.out/
+.cdk.staging/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Local scratch
+.tools/
+tmp/
+
+# Static build output for publishing under a subdirectory
+dist-static/

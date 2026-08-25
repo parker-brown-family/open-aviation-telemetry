@@ -1,0 +1,23 @@
+{
+  "name": "@oat/report-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/main.js",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@oat/data": "workspace:*",
+    "@oat/service-kit": "workspace:*",
+    "@oat/shared": "workspace:*",
+    "amqplib": "^0.10.5",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.6"
+  }
+}

@@ -1,0 +1,56 @@
+Open Aviation Telemetry {{ .Chart.AppVersion }} is installing into namespace {{ .Release.Namespace }}.
+
+Workloads in this release:
+{{- range $name, $workload := .Values.workloads }}
+{{- if $workload.enabled }}
+  - {{ $name }}{{ if $workload.autoscaling.enabled }} (autoscaling {{ $workload.autoscaling.minReplicas }}-{{ $workload.autoscaling.maxReplicas }}){{ else }} ({{ $workload.replicas }} replicas){{ end }}
+{{- end }}
+{{- end }}
+
+Watch the rollout:
+
+  kubectl -n {{ .Release.Namespace }} rollout status deployment/telemetry-api
+  kubectl -n {{ .Release.Namespace }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+
+Check readiness. A pod that is running but not ready cannot reach a dependency;
+the response body names which one:
+
+  kubectl -n {{ .Release.Namespace }} port-forward svc/telemetry-api 8080:{{ (index .Values.workloads "telemetry-api").service.port }}
+  curl -s localhost:8080/ready | jq
+
+{{- if .Values.ingress.enabled }}
+
+The ingress takes a few minutes to be given an address:
+
+  kubectl -n {{ .Release.Namespace }} get ingress {{ include "oat.fullname" . }}
+{{- else }}
+
+No ingress was created. Reach the dashboard with a port-forward:
+
+  kubectl -n {{ .Release.Namespace }} port-forward svc/web 8000:{{ .Values.workloads.web.service.port }}
+{{- end }}
+
+Prove the whole pipeline works — ingest, Kafka, the stream processor,
+PostgreSQL, alerting, RabbitMQ, retry and dead-lettering:
+
+  make smoke API_URL=http://localhost:8080
+
+{{- if eq .Values.kafka.auth "plaintext" }}
+
+NOTE: kafka.auth is "plaintext". That is correct for a local broker and wrong
+for Amazon MSK, which authenticates with IAM. Set --set kafka.auth=aws-msk-iam
+when pointing at MSK.
+{{- end }}
+
+{{- if not .Values.image.tag }}
+
+NOTE: image.tag was not set, so images resolve to the chart's appVersion
+({{ .Chart.AppVersion }}). Deploy a git SHA instead — an ambiguous tag makes
+"which code is running" unanswerable.
+{{- end }}
+
+{{- if .Values.workloads.simulator.enabled }}
+
+NOTE: the simulator is enabled. It generates continuous synthetic load. Turn it
+off with --set workloads.simulator.enabled=false when you are done.
+{{- end }}

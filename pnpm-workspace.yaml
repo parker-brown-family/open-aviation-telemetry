@@ -1,0 +1,9 @@
+packages:
+  - 'packages/*'
+  - 'infra/cdk-reference'
+
+# esbuild (pulled in by vitest and vite) needs its install script to select the
+# prebuilt platform binary. Approving it here keeps `pnpm install` non-interactive
+# in CI instead of stopping on an unapproved build script.
+allowBuilds:
+  esbuild: true

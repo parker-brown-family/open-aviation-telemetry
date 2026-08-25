@@ -1,0 +1,51 @@
+{{- if .Values.ingress.enabled }}
+{{/*
+Ingress.
+
+Two rules, one host: /api and /docs go to the API, everything else goes to the
+static client. Same origin, so the browser never makes a cross-origin request
+and CORS is not part of the deployment at all.
+
+Path order matters — the API prefixes are listed first because the "/" rule
+would otherwise match everything.
+*/}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "oat.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "oat.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.ingress.annotations | nindent 4 }}
+    {{- if .Values.ingress.certificateArn }}
+    alb.ingress.kubernetes.io/certificate-arn: {{ .Values.ingress.certificateArn | quote }}
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - {{ if .Values.ingress.host }}host: {{ .Values.ingress.host | quote }}
+      {{ end }}http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: telemetry-api
+                port:
+                  number: {{ (index .Values.workloads "telemetry-api").service.port }}
+          - path: /docs
+            pathType: Prefix
+            backend:
+              service:
+                name: telemetry-api
+                port:
+                  number: {{ (index .Values.workloads "telemetry-api").service.port }}
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: {{ .Values.workloads.web.service.port }}
+{{- end }}

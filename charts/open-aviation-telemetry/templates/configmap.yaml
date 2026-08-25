@@ -1,0 +1,21 @@
+{{/*
+Non-secret configuration.
+
+Its checksum is annotated onto every pod template, so changing a value here
+rolls the deployments. Without that, a ConfigMap edit silently changes nothing
+until something else restarts the pods — and then takes effect at a moment
+nobody connects to the change.
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "oat.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "oat.labels" . | nindent 4 }}
+data:
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  AWS_REGION: {{ .Values.config.awsRegion | quote }}
+  KAFKA_BROKERS: {{ .Values.kafka.brokers | quote }}
+  KAFKA_AUTH: {{ .Values.kafka.auth | quote }}
+  DATABASE_SSL: {{ .Values.database.ssl | quote }}

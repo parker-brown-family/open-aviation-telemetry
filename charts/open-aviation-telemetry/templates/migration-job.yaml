@@ -1,0 +1,65 @@
+{{- if .Values.migrations.enabled }}
+{{/*
+Schema migrations as a pre-install/pre-upgrade hook.
+
+The API can run migrations at start-up, and does locally. In a cluster it must
+not: with several replicas, every pod would try to apply the same DDL at the
+same moment on every rollout. A hook Job runs exactly once, and — because the
+weight and delete policy make Helm wait for it — the new pods do not start until
+it has succeeded.
+
+This is also why a failed migration is a failed release rather than a rollout
+that half-works: hook failure aborts the upgrade with the previous version still
+serving.
+*/}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "oat.fullname" . }}-migrate
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "oat.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrate
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-5"
+    # Delete the previous Job before creating this one; keep a failed Job so its
+    # logs can be read.
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: {{ .Values.migrations.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.migrations.activeDeadlineSeconds }}
+  template:
+    metadata:
+      labels:
+        {{- include "oat.labels" . | nindent 8 }}
+        app.kubernetes.io/component: migrate
+    spec:
+      restartPolicy: Never
+      serviceAccountName: telemetry-api
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: migrate
+          image: {{ include "oat.image" (dict "root" . "workload" dict "name" "telemetry-api") }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          # Runs the migration path and exits, rather than starting the server.
+          command: ["node", "--enable-source-maps", "dist/migrate.js"]
+          env:
+            {{- include "oat.commonEnv" . | nindent 12 }}
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { memory: 256Mi }
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- end }}

@@ -1,0 +1,10 @@
+node_modules
+dist
+coverage
+pnpm-lock.yaml
+LICENSE
+infra/terraform
+cdk.out
+charts/**/templates
+dist-static
+cdk.out

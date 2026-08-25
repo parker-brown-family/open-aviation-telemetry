@@ -1,0 +1,206 @@
+# The whole system, locally, in one command.
+#
+# Every managed AWS service has a local stand-in that speaks the same protocol:
+# PostgreSQL for RDS, Kafka in KRaft mode for MSK, RabbitMQ for Amazon MQ. The
+# application code is identical in both places — only connection strings and the
+# authentication mode change. That is the point: the thing you demonstrate on a
+# laptop is the thing that would run on the cluster.
+#
+#   make demo     bring it all up and start the simulator
+#   make logs     follow everything
+#   make down     stop and remove volumes
+
+name: open-aviation-telemetry
+
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  environment: &service-env
+    NODE_ENV: production
+    LOG_LEVEL: ${LOG_LEVEL:-info}
+    DATABASE_URL: postgres://oat:oat@postgres:5432/oat
+    DATABASE_SSL: disable
+    KAFKA_BROKERS: kafka:9092
+    KAFKA_AUTH: plaintext
+    RABBITMQ_URL: amqp://oat:oat@rabbitmq:5672
+
+services:
+  # ---------------------------------------------------------------- data
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: oat
+      POSTGRES_PASSWORD: oat
+      POSTGRES_DB: oat
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U oat -d oat']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  # Kafka in KRaft mode: no ZooKeeper, one container, same client protocol as
+  # MSK. Two listeners because containers reach it as kafka:9092 while anything
+  # on the host reaches it as localhost:29092 — a broker advertises the address
+  # clients should dial, so it has to know both.
+  kafka:
+    image: apache/kafka:3.9.2
+    environment:
+      KAFKA_NODE_ID: '1'
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: '1'
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: '1'
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: '1'
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      # Three partitions so per-partition consumer lag is visible on the
+      # dashboard, and so more than one consumer replica can share the work.
+      KAFKA_NUM_PARTITIONS: '3'
+    ports:
+      - '${KAFKA_PORT:-29092}:29092'
+    # Deliberately no volume. Kafka's log directory is owned by the image's
+    # unprivileged user, and a named volume would mount over it root-owned. A
+    # demo does not need the stream to survive `docker compose down`, and topics
+    # are re-created automatically — so this trades durability nobody needs for
+    # one fewer thing that can fail on a fresh machine.
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          '/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list > /dev/null 2>&1 || exit 1',
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:4.1-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: oat
+      RABBITMQ_DEFAULT_PASS: oat
+    ports:
+      - '${RABBITMQ_PORT:-5672}:5672'
+      - '${RABBITMQ_UI_PORT:-15672}:15672'
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'check_running']
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------- services
+  telemetry-api:
+    <<: *service-defaults
+    build:
+      context: .
+      args:
+        PACKAGE: '@oat/telemetry-api'
+    environment:
+      <<: *service-env
+      PORT: '8080'
+      RUN_MIGRATIONS: 'true'
+      INFRASTRUCTURE_PROVIDER: mock
+    ports:
+      - '${API_PORT:-8080}:8080'
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8080/health']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+  telemetry-consumer:
+    <<: *service-defaults
+    build:
+      context: .
+      args:
+        PACKAGE: '@oat/telemetry-consumer'
+    environment:
+      <<: *service-env
+      HEALTH_PORT: '8081'
+    ports:
+      - '${CONSUMER_PORT:-8081}:8081'
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+      telemetry-api: { condition: service_started }
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8081/health']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+  report-worker:
+    <<: *service-defaults
+    build:
+      context: .
+      args:
+        PACKAGE: '@oat/report-worker'
+    environment:
+      <<: *service-env
+      HEALTH_PORT: '8082'
+      PREFETCH: '1'
+    ports:
+      - '${WORKER_PORT:-8082}:8082'
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      telemetry-api: { condition: service_started }
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8082/health']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+  simulator:
+    <<: *service-defaults
+    build:
+      context: .
+      args:
+        PACKAGE: '@oat/simulator'
+    environment:
+      <<: *service-env
+      HEALTH_PORT: '8083'
+      API_BASE_URL: http://telemetry-api:8080
+    ports:
+      - '${SIMULATOR_PORT:-8083}:8083'
+    depends_on:
+      telemetry-api: { condition: service_healthy }
+
+  web:
+    build:
+      context: .
+      dockerfile: packages/web/Dockerfile
+      args:
+        # Empty: the client calls the same origin, and nginx proxies /api to the
+        # API container. No CORS, no build-time URL to get wrong.
+        VITE_API_BASE_URL: ''
+        VITE_BASE_PATH: '/'
+    ports:
+      - '${WEB_PORT:-3000}:80'
+    depends_on:
+      telemetry-api: { condition: service_started }
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  rabbitmq-data:

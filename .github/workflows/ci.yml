@@ -1,0 +1,253 @@
+name: CI
+
+# Runs on every pull request and on main. The job order matters: the cheap
+# checks that catch most mistakes run first and independently, and the expensive
+# end-to-end job only runs once the code compiles and the unit tests pass.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # A new push supersedes an in-flight run for the same branch. Nobody needs the
+  # result of a build for code that has already been replaced.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Read-only by default. A job that needs more asks for it explicitly.
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  lint:
+    name: Format and types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Check formatting
+        run: pnpm format:check
+
+      - name: Typecheck every package
+        run: pnpm -r --filter "./packages/*" typecheck
+
+  test:
+    name: Unit and component tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Run the test suites
+        run: pnpm vitest run --coverage
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 7
+
+  build:
+    name: Build packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Compile every package
+        run: pnpm -r --filter "./packages/*" build
+
+      - name: Build the web client
+        run: pnpm --filter @oat/web build
+
+  terraform:
+    name: Terraform
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+
+      - name: Check formatting
+        run: terraform fmt -check -recursive infra/terraform
+
+      # -backend=false initialises providers and modules without needing state
+      # or AWS credentials, which is all `validate` requires.
+      - name: Validate the demo environment
+        working-directory: infra/terraform/environments/demo
+        run: |
+          terraform init -backend=false -input=false
+          terraform validate -no-color
+
+  helm:
+    name: Helm chart
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.16.4
+
+      - name: Lint the chart
+        run: helm lint charts/open-aviation-telemetry
+
+      - name: Render with defaults
+        run: helm template oat charts/open-aviation-telemetry --namespace aviation > /dev/null
+
+      # The production-shaped path exercises the ingress, the MSK auth mode and
+      # the simulator, none of which the default values render.
+      - name: Render with ingress, MSK auth and the simulator
+        run: |
+          helm template oat charts/open-aviation-telemetry \
+            --namespace aviation \
+            --set ingress.enabled=true \
+            --set ingress.host=telemetry.example.com \
+            --set kafka.auth=aws-msk-iam \
+            --set workloads.simulator.enabled=true \
+            --set image.tag=${GITHUB_SHA::7} > /dev/null
+
+  images:
+    name: Container images
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - telemetry-api
+          - telemetry-consumer
+          - report-worker
+          - simulator
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Build only. Publishing needs registry credentials this repository does
+      # not assume; see docs/aws-deployment.md for the ECR push step.
+      - name: Build ${{ matrix.service }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          build-args: PACKAGE=@oat/${{ matrix.service }}
+          push: false
+          tags: oat/${{ matrix.service }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+  web-image:
+    name: Web image
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build web
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/web/Dockerfile
+          push: false
+          tags: oat/web:${{ github.sha }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+  e2e:
+    name: End-to-end pipeline
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    # The only job that proves the architecture rather than the code: it brings
+    # up PostgreSQL, Kafka, RabbitMQ and all four services, then asserts that a
+    # telemetry report really does cross the broker and reach the database.
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Start the stack
+        run: docker compose up -d --build
+
+      - name: Wait for readiness
+        run: |
+          for i in $(seq 1 90); do
+            if curl -sf http://localhost:8080/ready > /dev/null 2>&1; then
+              echo "ready after ${i} attempts"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "stack did not become ready"
+          curl -s http://localhost:8080/ready || true
+          docker compose ps
+          docker compose logs --tail=100
+          exit 1
+
+      - name: Smoke test
+        run: ./scripts/smoke-test.sh
+
+      - name: End-to-end suite
+        run: pnpm vitest run --config tests/e2e/vitest.config.ts
+        env:
+          E2E_BASE_URL: http://localhost:8080
+
+      # Logs are the only way to diagnose a failure in a stack that no longer
+      # exists, so they are captured on failure rather than after teardown.
+      - name: Capture logs on failure
+        if: failure()
+        run: docker compose logs --tail=300
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v --remove-orphans

@@ -1,0 +1,31 @@
+apiVersion: v2
+name: open-aviation-telemetry
+description: >-
+  Aircraft telemetry ingestion, stream processing and asynchronous report
+  generation. One umbrella chart for all five workloads, because they are
+  deployed together, versioned together and share their configuration.
+type: application
+
+# The chart version moves when the templates change; appVersion tracks the
+# application. Keeping them separate means a values-only fix does not pretend to
+# be a new application release.
+version: 0.1.0
+appVersion: '0.1.0'
+
+keywords:
+  - aviation
+  - telemetry
+  - kafka
+  - rabbitmq
+  - reference-architecture
+
+home: https://github.com/parker-brown-family/open-aviation-telemetry
+sources:
+  - https://github.com/parker-brown-family/open-aviation-telemetry
+
+maintainers:
+  - name: Parker Brown
+    url: https://github.com/parker-brown-family
+
+annotations:
+  category: Analytics

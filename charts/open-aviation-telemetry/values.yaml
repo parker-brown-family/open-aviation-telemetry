@@ -1,0 +1,215 @@
+# Default values.
+#
+# These defaults describe a small but real deployment: probes on every workload,
+# requests and limits on every container, non-root containers with a read-only
+# root filesystem, and autoscaling on the two tiers whose load actually varies.
+#
+# Nothing here contains a credential. The database and broker URLs come from a
+# Kubernetes Secret that is created from AWS Secrets Manager — see `secrets`
+# below and docs/aws-deployment.md.
+
+nameOverride: ''
+fullnameOverride: ''
+
+image:
+  # Set to the ECR registry from `terraform output ecr_repository_urls`, minus
+  # the service name — e.g. 123456789012.dkr.ecr.ca-central-1.amazonaws.com/oat-demo
+  registry: ghcr.io/parker-brown-family/open-aviation-telemetry
+  # Overridden per deploy with the git SHA. `latest` is never deployed: an
+  # ambiguous tag makes "which code is running" unanswerable.
+  tag: ''
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+# ---------------------------------------------------------------- config
+
+config:
+  logLevel: info
+  awsRegion: ca-central-1
+
+kafka:
+  # From `terraform output kafka_bootstrap_brokers`.
+  brokers: kafka:9092
+  # plaintext for a local broker; aws-msk-iam for MSK, where the pod's own IAM
+  # role is the credential and there is no password to store.
+  auth: plaintext
+
+database:
+  # 'require' for RDS. The RDS parameter group also refuses unencrypted
+  # connections, so this must match.
+  ssl: require
+  poolMax: 10
+
+# ---------------------------------------------------------------- secrets
+
+# The chart does not create secrets and does not accept credentials as values —
+# a value ends up in `helm get values`, in CI logs and in shell history.
+#
+# Create the Secret from AWS Secrets Manager before installing, either with the
+# External Secrets Operator (preferred, because it re-syncs on rotation) or
+# once by hand:
+#
+#   kubectl create secret generic oat-credentials \
+#     --from-literal=DATABASE_URL="$(aws secretsmanager get-secret-value \
+#        --secret-id oat-demo/database --query SecretString --output text | jq -r .url)" \
+#     --from-literal=RABBITMQ_URL="$(aws secretsmanager get-secret-value \
+#        --secret-id oat-demo/rabbitmq --query SecretString --output text | jq -r .url)"
+secrets:
+  existingSecret: oat-credentials
+  databaseUrlKey: DATABASE_URL
+  rabbitmqUrlKey: RABBITMQ_URL
+
+# ---------------------------------------------------------------- migrations
+
+migrations:
+  # Run as a pre-install/pre-upgrade Job rather than in the API process. With
+  # several API replicas, in-process migration means N pods racing to apply the
+  # same DDL on every rollout.
+  enabled: true
+  backoffLimit: 3
+  activeDeadlineSeconds: 300
+
+# ---------------------------------------------------------------- workloads
+
+# Each entry becomes a Deployment, a ServiceAccount, and — when `service.port`
+# is set — a Service. Written as data rather than as five near-identical
+# template files so that adding a workload is one block, not one more file to
+# keep in step with the other four.
+workloads:
+  telemetry-api:
+    enabled: true
+    replicas: 2
+    command: ['node', '--enable-source-maps', 'dist/main.js']
+    service:
+      port: 8080
+      targetPort: 8080
+    probePort: 8080
+    env:
+      PORT: '8080'
+      # Off: the migration Job owns schema changes.
+      RUN_MIGRATIONS: 'false'
+      INFRASTRUCTURE_PROVIDER: mock
+    resources:
+      requests: { cpu: 100m, memory: 192Mi }
+      limits: { memory: 512Mi }
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 8
+      targetCPUUtilizationPercentage: 70
+
+  telemetry-consumer:
+    enabled: true
+    # Never usefully exceeds the partition count: extra replicas sit idle
+    # because a partition has exactly one consumer in a group.
+    replicas: 2
+    probePort: 8081
+    env:
+      HEALTH_PORT: '8081'
+    resources:
+      requests: { cpu: 100m, memory: 192Mi }
+      limits: { memory: 512Mi }
+    autoscaling:
+      enabled: false
+
+  report-worker:
+    enabled: true
+    replicas: 2
+    probePort: 8082
+    env:
+      HEALTH_PORT: '8082'
+      PREFETCH: '1'
+    resources:
+      requests: { cpu: 100m, memory: 192Mi }
+      limits: { memory: 512Mi }
+    autoscaling:
+      # CPU is the wrong signal for a queue worker — the right one is queue
+      # depth, which needs KEDA or a custom metrics adapter. Left off rather
+      # than configured wrongly. See docs/aws-deployment.md.
+      enabled: false
+
+  simulator:
+    # A load generator, not part of the application. Off unless a demo wants it.
+    enabled: false
+    replicas: 1
+    probePort: 8083
+    env:
+      HEALTH_PORT: '8083'
+      SEED: '20260825'
+    resources:
+      requests: { cpu: 50m, memory: 128Mi }
+      limits: { memory: 256Mi }
+    autoscaling:
+      enabled: false
+
+  web:
+    enabled: true
+    replicas: 2
+    # nginx, not Node: different image and no application environment.
+    imageName: web
+    service:
+      port: 80
+      targetPort: 80
+    probePort: 80
+    probePath: /
+    readOnlyRootFilesystem: false
+    resources:
+      requests: { cpu: 25m, memory: 64Mi }
+      limits: { memory: 128Mi }
+    autoscaling:
+      enabled: false
+
+# ---------------------------------------------------------------- ingress
+
+ingress:
+  enabled: false
+  className: alb
+  host: ''
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    # The ALB health-checks readiness, not liveness: a pod whose broker is
+    # briefly unreachable should leave the target group, not be restarted.
+    alb.ingress.kubernetes.io/healthcheck-path: /ready
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+  # ARN of an ACM certificate. Without it the listener is HTTP only.
+  certificateArn: ''
+
+# ---------------------------------------------------------------- platform
+
+serviceAccount:
+  create: true
+  # EKS Pod Identity needs no annotation on the ServiceAccount — the association
+  # lives in the EKS API and Terraform creates it. This is left here for the
+  # IRSA path, which does need eks.amazonaws.com/role-arn.
+  annotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ['ALL']
+
+# Keeps at least one replica serving during a voluntary disruption such as a
+# node drain. Without it, draining a node can take every replica at once.
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+nodeSelector: {}
+tolerations: []
+# Spread replicas across availability zones so losing one AZ does not take a
+# whole tier with it.
+topologySpreadEnabled: true
+
+commonLabels: {}
+commonAnnotations: {}

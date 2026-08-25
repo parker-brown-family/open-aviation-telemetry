@@ -1,0 +1,253 @@
+{{/*
+Every workload: a ServiceAccount, a Deployment, and — where a port is declared —
+a Service, an HPA and a PodDisruptionBudget.
+
+Generated from `.Values.workloads` rather than written out five times. The five
+services differ only in name, port and environment, so five near-identical
+template files would mean five places to apply the next probe or security-context
+change, and four places to forget it.
+*/}}
+{{- $root := . -}}
+{{- range $name, $workload := .Values.workloads }}
+{{- if $workload.enabled }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $name }}
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    {{- include "oat.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+  {{- with $root.Values.serviceAccount.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+# One ServiceAccount per workload, matching the per-application IAM roles
+# Terraform binds through EKS Pod Identity. A shared account would give the
+# simulator the same AWS access as the API.
+automountServiceAccountToken: true
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    {{- include "oat.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  {{- if not $workload.autoscaling.enabled }}
+  {{- /* Omitted when an HPA owns it, or every sync would fight the autoscaler. */}}
+  replicas: {{ $workload.replicas }}
+  {{- end }}
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # Never drop below the current replica count during a rollout, and add at
+      # most one extra pod at a time.
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      {{- include "oat.selectorLabels" (dict "root" $root "name" $name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "oat.labels" $root | nindent 8 }}
+        app.kubernetes.io/component: {{ $name }}
+      annotations:
+        # Roll the pods when configuration changes. Without this, a ConfigMap
+        # edit changes nothing until something else happens to restart them.
+        checksum/config: {{ include (print $root.Template.BasePath "/configmap.yaml") $root | sha256sum }}
+        {{- with $root.Values.commonAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ $name }}
+      securityContext:
+        {{- toYaml $root.Values.podSecurityContext | nindent 8 }}
+      {{- with $root.Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $root.Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $root.Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if $root.Values.topologySpreadEnabled }}
+      topologySpreadConstraints:
+        # Spread replicas across availability zones. ScheduleAnyway rather than
+        # DoNotSchedule so a skewed cluster degrades placement instead of
+        # leaving pods pending.
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              {{- include "oat.selectorLabels" (dict "root" $root "name" $name) | nindent 14 }}
+      {{- end }}
+      # Long enough for an in-flight request to finish and a Kafka batch or a
+      # RabbitMQ job to be acknowledged. The processes handle SIGTERM; this is
+      # how much time they are given.
+      terminationGracePeriodSeconds: 40
+      containers:
+        - name: {{ $name }}
+          image: {{ include "oat.image" (dict "root" $root "workload" $workload "name" $name) }}
+          imagePullPolicy: {{ $root.Values.image.pullPolicy }}
+          {{- with $workload.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          securityContext:
+            {{- $ctx := deepCopy $root.Values.containerSecurityContext }}
+            {{- if hasKey $workload "readOnlyRootFilesystem" }}
+            {{- $_ := set $ctx "readOnlyRootFilesystem" $workload.readOnlyRootFilesystem }}
+            {{- end }}
+            {{- toYaml $ctx | nindent 12 }}
+          {{- if ne $name "web" }}
+          env:
+            {{- include "oat.commonEnv" $root | nindent 12 }}
+            {{- range $key, $value := $workload.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          {{- end }}
+          {{- if $workload.service }}
+          ports:
+            - name: http
+              containerPort: {{ $workload.service.targetPort }}
+              protocol: TCP
+          {{- else }}
+          ports:
+            - name: health
+              containerPort: {{ $workload.probePort }}
+              protocol: TCP
+          {{- end }}
+          # Liveness and readiness are deliberately different checks.
+          # Liveness failing KILLS the pod, so it must only test whether this
+          # process is wedged. Readiness failing only removes it from service,
+          # so that is where dependency health belongs. Pointing liveness at a
+          # dependency check turns a broker blip into a cluster-wide restart.
+          livenessProbe:
+            httpGet:
+              path: {{ $workload.probePath | default "/health" }}
+              port: {{ $workload.probePort }}
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: {{ $workload.probePath | default "/ready" }}
+              port: {{ $workload.probePort }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          # Gives a slow-starting pod time without loosening the liveness probe
+          # for the rest of its life.
+          startupProbe:
+            httpGet:
+              path: {{ $workload.probePath | default "/health" }}
+              port: {{ $workload.probePort }}
+            periodSeconds: 5
+            failureThreshold: 24
+          resources:
+            {{- toYaml $workload.resources | nindent 12 }}
+          volumeMounts:
+            # The root filesystem is read-only, so anything that needs to write
+            # gets an explicit, ephemeral mount.
+            - name: tmp
+              mountPath: /tmp
+            {{- if eq $name "web" }}
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-run
+              mountPath: /var/run
+            {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        {{- if eq $name "web" }}
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-run
+          emptyDir: {}
+        {{- end }}
+{{- if $workload.service }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    {{- include "oat.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: {{ $workload.service.port }}
+      targetPort: {{ $workload.service.targetPort }}
+      protocol: TCP
+  selector:
+    {{- include "oat.selectorLabels" (dict "root" $root "name" $name) | nindent 4 }}
+{{- end }}
+{{- if $workload.autoscaling.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ $name }}
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    {{- include "oat.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ $name }}
+  minReplicas: {{ $workload.autoscaling.minReplicas }}
+  maxReplicas: {{ $workload.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $workload.autoscaling.targetCPUUtilizationPercentage }}
+  behavior:
+    scaleUp:
+      # React quickly to load, because the queue in front of this is the user.
+      stabilizationWindowSeconds: 30
+    scaleDown:
+      # Retreat slowly. Scaling down on a brief lull just to scale back up is
+      # how autoscaling becomes flapping.
+      stabilizationWindowSeconds: 300
+{{- end }}
+{{- if $root.Values.podDisruptionBudget.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $name }}
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    {{- include "oat.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  minAvailable: {{ $root.Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "oat.selectorLabels" (dict "root" $root "name" $name) | nindent 6 }}
+{{- end }}
+{{- end }}
+{{- end }}
