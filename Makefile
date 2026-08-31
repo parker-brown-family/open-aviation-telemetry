@@ -138,3 +138,39 @@ tf-apply: ## Create the AWS infrastructure (costs money)
 .PHONY: destroy
 destroy: ## Destroy the AWS infrastructure
 	cd infra/terraform/environments/demo && terraform destroy
+
+# ---------------------------------------------------------------- eks session
+#
+# A short-lived cluster for practising the parts of EKS that have no local
+# equivalent, at roughly US$0.34/hr rather than the US$20–35/day the Terraform
+# stack costs. See docs/eks-session.md. `eks-down` is deliberately the shortest
+# target name in this file.
+
+.PHONY: eks-preflight
+eks-preflight: ## Check credentials, tools and the budget alarm (free)
+	./scripts/eks-session.sh preflight
+
+.PHONY: eks-up
+eks-up: ## Create the short-lived EKS cluster (starts billing)
+	./scripts/eks-session.sh up
+	./scripts/eks-session.sh addons
+
+.PHONY: eks-deploy
+eks-deploy: ## Deploy the brokers, database and application onto the cluster
+	./scripts/eks-session.sh deploy
+
+.PHONY: eks-verify
+eks-verify: ## Prove the pipeline ran on AWS — volume, ALB, consumer lag
+	./scripts/eks-session.sh verify
+
+.PHONY: eks-status
+eks-status: ## How long the cluster has been running, and roughly what that cost
+	./scripts/eks-session.sh status
+
+.PHONY: eks-down
+eks-down: ## Destroy the cluster and confirm nothing is still billing
+	./scripts/eks-session.sh down
+
+.PHONY: eks-confirm-gone
+eks-confirm-gone: ## Ask AWS directly whether anything survived (free, run it twice)
+	./scripts/eks-session.sh confirm-gone

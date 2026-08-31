@@ -1,0 +1,234 @@
+# Kafka, RabbitMQ and PostgreSQL, running as pods inside the cluster.
+#
+# This is deliberately NOT what docs/aws-deployment.md describes. That document
+# uses MSK, Amazon MQ and RDS, which is what a production deployment should use
+# and what infra/terraform builds. It also costs about US$9 a day before a
+# single message moves, most of it MSK's per-cluster-hour base charge.
+#
+# The purpose of a short-lived cluster is to exercise the parts of EKS that
+# cannot be practised locally — the OIDC provider and IRSA, the EBS CSI driver
+# and real block storage, the load balancer controller and a real ALB, node
+# groups and the AWS VPC CNI. None of those get more educational because the
+# broker behind them is managed. So the brokers come along as pods, the images
+# and settings copied from docker-compose.yml so that the pipeline behaves the
+# same way it does on a laptop, and the money goes to the parts being learned.
+#
+# Every one of these is a single replica with no durability story beyond the
+# PostgreSQL volume. That is correct for a demonstration cluster that will be
+# destroyed within hours, and wrong for anything else. Do not lift this file
+# into a deployment that is expected to survive a node replacement.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: oat
+---
+# gp3 rather than the gp2 that EKS still ships as its default StorageClass. gp3
+# is cheaper per gibibyte and its baseline throughput does not scale with volume
+# size, so a small volume is not also a slow one. Creating this is the step that
+# proves the EBS CSI driver addon is actually installed and working: without it
+# the PersistentVolumeClaim below stays Pending forever, which is the single
+# most common way a first EKS cluster looks broken.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gp3
+  annotations:
+    storageclass.kubernetes.io/is-default-class: 'true'
+provisioner: ebs.csi.aws.com
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+parameters:
+  type: gp3
+  encrypted: 'true'
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: oat-credentials
+  namespace: oat
+type: Opaque
+stringData:
+  # These are the same throwaway credentials docker-compose.yml uses, for the
+  # same reason: everything they protect lives inside a cluster that is about to
+  # be deleted, and pretending otherwise would mean inventing a secret-rotation
+  # story that this deployment does not have. The production path is documented
+  # in charts/open-aviation-telemetry/values.yaml — a Secret populated from AWS
+  # Secrets Manager, which is why the chart takes a secret name and never takes
+  # a password as a Helm value.
+  DATABASE_URL: postgres://oat:oat@postgres.oat.svc.cluster.local:5432/oat
+  RABBITMQ_URL: amqp://oat:oat@rabbitmq.oat.svc.cluster.local:5672
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+  namespace: oat
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: gp3
+  resources:
+    requests:
+      storage: 8Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: oat
+spec:
+  selector: { app: postgres }
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: oat
+spec:
+  replicas: 1
+  # Recreate, not RollingUpdate. The volume is ReadWriteOnce and attaches to one
+  # node, so a rolling update would leave the new pod waiting for a volume the
+  # old pod has not released yet.
+  strategy: { type: Recreate }
+  selector:
+    matchLabels: { app: postgres }
+  template:
+    metadata:
+      labels: { app: postgres }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          env:
+            - { name: POSTGRES_USER, value: oat }
+            - { name: POSTGRES_PASSWORD, value: oat }
+            - { name: POSTGRES_DB, value: oat }
+            # The image refuses to initialise onto a volume whose root is not
+            # empty, and an EBS volume arrives with a lost+found directory.
+            - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
+          ports:
+            - containerPort: 5432
+          readinessProbe:
+            exec: { command: ['pg_isready', '-U', 'oat', '-d', 'oat'] }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { memory: 512Mi }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: postgres-data }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  namespace: oat
+spec:
+  selector: { app: kafka }
+  ports:
+    - { name: plaintext, port: 9092, targetPort: 9092 }
+    - { name: controller, port: 9093, targetPort: 9093 }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka
+  namespace: oat
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector:
+    matchLabels: { app: kafka }
+  template:
+    metadata:
+      labels: { app: kafka }
+    spec:
+      containers:
+        - name: kafka
+          image: apache/kafka:3.9.2
+          env:
+            # KRaft: the broker is also the controller, so there is no
+            # ZooKeeper. Settings copied from docker-compose.yml.
+            - { name: KAFKA_NODE_ID, value: '1' }
+            - { name: KAFKA_PROCESS_ROLES, value: 'broker,controller' }
+            - { name: KAFKA_CONTROLLER_QUORUM_VOTERS, value: '1@localhost:9093' }
+            - { name: KAFKA_LISTENERS, value: 'PLAINTEXT://:9092,CONTROLLER://:9093' }
+            # The advertised listener must be the address a client inside the
+            # cluster will use, not the pod IP: the pod IP changes on every
+            # restart and clients cache what the broker advertises. This is the
+            # single line that most often makes a working Compose setup fail on
+            # Kubernetes.
+            - {
+                name: KAFKA_ADVERTISED_LISTENERS,
+                value: 'PLAINTEXT://kafka.oat.svc.cluster.local:9092',
+              }
+            - {
+                name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP,
+                value: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT',
+              }
+            - { name: KAFKA_CONTROLLER_LISTENER_NAMES, value: 'CONTROLLER' }
+            - { name: KAFKA_INTER_BROKER_LISTENER_NAME, value: 'PLAINTEXT' }
+            - { name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR, value: '1' }
+            - { name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR, value: '1' }
+            - { name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR, value: '1' }
+            - { name: KAFKA_AUTO_CREATE_TOPICS_ENABLE, value: 'true' }
+            - { name: KAFKA_NUM_PARTITIONS, value: '3' }
+          ports:
+            - containerPort: 9092
+          readinessProbe:
+            tcpSocket: { port: 9092 }
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 200m, memory: 512Mi }
+            limits: { memory: 1Gi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+  namespace: oat
+spec:
+  selector: { app: rabbitmq }
+  ports:
+    - { name: amqp, port: 5672, targetPort: 5672 }
+    - { name: management, port: 15672, targetPort: 15672 }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+  namespace: oat
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector:
+    matchLabels: { app: rabbitmq }
+  template:
+    metadata:
+      labels: { app: rabbitmq }
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:4.1-management-alpine
+          env:
+            - { name: RABBITMQ_DEFAULT_USER, value: oat }
+            - { name: RABBITMQ_DEFAULT_PASS, value: oat }
+          ports:
+            - containerPort: 5672
+            - containerPort: 15672
+          readinessProbe:
+            exec: { command: ['rabbitmq-diagnostics', '-q', 'check_running'] }
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { memory: 512Mi }
