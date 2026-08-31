@@ -147,6 +147,40 @@ jobs:
             --set workloads.simulator.enabled=true \
             --set image.tag=${GITHUB_SHA::7} > /dev/null
 
+      # Rendering without error is not the same as rendering correctly, and the
+      # listener annotations are a case where the difference costs an afternoon:
+      # an HTTPS listener with no certificate makes the AWS Load Balancer
+      # Controller reject the Ingress outright, so no load balancer is created
+      # and the only symptom is an address that never arrives.
+      - name: An ingress without a certificate asks for HTTP only
+        run: |
+          set -euo pipefail
+          out=$(helm template oat charts/open-aviation-telemetry \
+            --namespace aviation --set ingress.enabled=true)
+
+          echo "$out" | grep -q 'listen-ports: .\[{"HTTP": 80}\]' \
+            || { echo 'expected an HTTP-only listener set'; exit 1; }
+          if echo "$out" | grep -q 'ssl-redirect'; then
+            echo 'ssl-redirect must not be set without a certificate'; exit 1
+          fi
+          if echo "$out" | grep -q 'HTTPS'; then
+            echo 'an HTTPS listener was declared with no certificate-arn'; exit 1
+          fi
+
+      - name: An ingress with a certificate asks for HTTPS and redirects to it
+        run: |
+          set -euo pipefail
+          out=$(helm template oat charts/open-aviation-telemetry \
+            --namespace aviation --set ingress.enabled=true \
+            --set ingress.certificateArn=arn:aws:acm:ca-central-1:000000000000:certificate/test)
+
+          echo "$out" | grep -q 'certificate-arn: "arn:aws:acm:' \
+            || { echo 'the certificate arn was not passed through'; exit 1; }
+          echo "$out" | grep -q 'listen-ports: .\[{"HTTP": 80}, {"HTTPS": 443}\]' \
+            || { echo 'expected both listeners'; exit 1; }
+          echo "$out" | grep -q 'ssl-redirect: "443"' \
+            || { echo 'expected the redirect to the HTTPS listener'; exit 1; }
+
   images:
     name: Container images
     runs-on: ubuntu-latest

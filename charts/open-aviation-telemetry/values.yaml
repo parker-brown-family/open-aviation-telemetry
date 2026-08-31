@@ -171,9 +171,14 @@ ingress:
     # The ALB health-checks readiness, not liveness: a pod whose broker is
     # briefly unreachable should leave the target group, not be restarted.
     alb.ingress.kubernetes.io/healthcheck-path: /ready
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
-    alb.ingress.kubernetes.io/ssl-redirect: '443'
   # ARN of an ACM certificate. Without it the listener is HTTP only.
+  #
+  # The listener set and the redirect are NOT configured here, because both
+  # depend on this value. Declaring an HTTPS listener with no certificate does
+  # not degrade to HTTP — the controller rejects the Ingress and never creates
+  # a load balancer, and the only visible symptom is an Ingress that sits
+  # without an address forever. The template therefore derives both from this
+  # field; see templates/ingress.yaml.
   certificateArn: ''
 
 # ---------------------------------------------------------------- platform

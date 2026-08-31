@@ -20,6 +20,16 @@ metadata:
     {{- toYaml .Values.ingress.annotations | nindent 4 }}
     {{- if .Values.ingress.certificateArn }}
     alb.ingress.kubernetes.io/certificate-arn: {{ .Values.ingress.certificateArn | quote }}
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    {{- else }}
+    {{/*
+    HTTP only, on purpose. An HTTPS listener needs a certificate, and asking
+    for one without supplying it makes the controller reject the whole Ingress
+    rather than fall back — no load balancer is created and no error appears on
+    any object a reader is likely to look at.
+    */}}
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
     {{- end }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
