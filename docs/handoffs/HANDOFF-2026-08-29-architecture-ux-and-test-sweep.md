@@ -11,14 +11,14 @@ concurrent session added a credentials page and a certificate modal afterwards.
 All six of my commits and every file they introduced were verified still
 present.
 
-| Commit | What |
-|---|---|
+| Commit    | What                                                  |
+| --------- | ----------------------------------------------------- |
 | `6504348` | Diagram text fit + folio tabs with real code examples |
-| `47f3274` | Connectors drawn border-to-border |
-| `1555f50` | Test pass — pages 23% → 99%, +110 tests |
-| `3280ba0` | Datum selector + ADR-0012 |
-| `d2370f5` | Compass rose mark, generated favicon, 33 build steps |
-| `0bb47df` | CI off the deprecated Node 20 action runtime |
+| `47f3274` | Connectors drawn border-to-border                     |
+| `1555f50` | Test pass — pages 23% → 99%, +110 tests               |
+| `3280ba0` | Datum selector + ADR-0012                             |
+| `d2370f5` | Compass rose mark, generated favicon, 33 build steps  |
+| `0bb47df` | CI off the deprecated Node 20 action runtime          |
 
 ## What's done
 
@@ -29,15 +29,15 @@ constants and its tests read `styles.css`, so the CSS and the maths cannot drift
 apart. Connectors were drawn centre-to-centre and therefore ruled straight
 through the boxes they point at — `components/edgeGeometry.ts` trims them
 border-to-border using the blossom split of the quadratic, so the trimmed curve
-follows exactly the original path. *Verified by mutation:* reverting the trim
+follows exactly the original path. _Verified by mutation:_ reverting the trim
 failed exactly the two geometry assertions.
 
 **Folio tabs on the detail panel.** Explanation | Examples, where the examples
 are the actual code that implements the component, at the path and line numbers
 it lives at, plus real captured responses badged as such.
 `scripts/build-code-examples.mjs` slices every excerpt out of the repo at build
-time by anchor string and fails loudly if an anchor moved. *Verified live in the
-browser.*
+time by anchor string and fails loudly if an anchor moved. _Verified live in the
+browser._
 
 **Datum selector.** Both fleet displays centre on any major airport rather than
 only Kelowna. `regionAround()` in `shared/geo.ts` builds the window and widens
@@ -45,23 +45,23 @@ the longitude span by 1/cos(latitude) — otherwise the picture squashes by abou
 a third at 50°N and range rings render as ellipses pretending to be circles.
 Two latent bugs surfaced and were fixed: airports outside the window were being
 projected past the viewBox with labels sliced mid-glyph, and data blocks
-overlapped once the fleet bunched into a corner. *Verified live, centred on
-Calgary.*
+overlapped once the fleet bunched into a corner. _Verified live, centred on
+Calgary._
 
 **Compass rose + favicon.** The mark was a four-pointed star; it is now an
 eight-point compass rose. There was no favicon at all — there is one now,
-generated from the same geometry by `scripts/build-favicon.mjs`. *A test caught
-a real drift immediately: I changed the colours and had not regenerated.*
+generated from the same geometry by `scripts/build-favicon.mjs`. _A test caught
+a real drift immediately: I changed the colours and had not regenerated._
 
 **Training build steps.** 33 steps across 9 courses, each naming a change to
 this repository that cannot be made without the material. Collapsible, a/b/c/d
 labelled, X-and-strikethrough when done, empty box when not, whole row as the
-click target. *Verified live.*
+click target. _Verified live._
 
 **Test sweep.** 230 → 418 unit/component tests. Pages went 23% → 99%, components
 79% → 99%. The tests worth knowing about are the ones checking claims the code
 makes about itself: the dashboard's "where these numbers came from" paragraph
-(both branches pinned), the demo console's controls being *disabled* rather than
+(both branches pinned), the demo console's controls being _disabled_ rather than
 merely ineffective, the alerts rules table matching the processor's own
 constants, and the route list in `build-static.sh` matching `App.tsx` in both
 directions.
